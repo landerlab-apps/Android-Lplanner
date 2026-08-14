@@ -25,13 +25,13 @@ object Disclaimer {
  */
 object Manual {
     const val text: String = """ENTERING A DIVE
-Type Depth, Time and O2 % — plus He % for trimix — then press Add >>. Repeat for each level. Tap a level to edit it, use the arrows to reorder, × to remove. Untick a level to leave it out without deleting it.
+Type Depth, Time and O2 % — plus He % for trimix — then press Add >>. Repeat for each level. Tap a level to edit it, use the arrows to reorder, × to remove. Click a level's box to leave it out without deleting it.
 
 CLOSED CIRCUIT
 Switch to Closed to show Set (setpoint) and Sld (Scamahorn slide).
 
 DECO GASES
-Tick Yes and list the mixes, e.g. 50, 100. The planner picks the richest one allowed by Max PO2 and Max END.
+Click Yes and list the mixes, e.g. 50, 100. The planner picks the richest one allowed by Max PO2 and Max END.
 
 CONFIG
 Units, water, altitude, model, gradient factors, deep stops, ascent and descent rates, RMVs. Each section carries its own explanation.

@@ -131,25 +131,18 @@ private fun TopBar(
     ) {
         BarButton("Config", Icons.Filled.Settings, onClick = onConfig)
         BarButton("Log", Icons.AutoMirrored.Filled.MenuBook, onClick = onLog)
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Dimmed and inert until a surface interval is stated, when residual
-            // gas is being carried — same 40% treatment as Share and Print.
-            Text(
-                text = "Calculate",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .alphaIf(m.canCalculate)
-                    .border(1.5.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(4.dp))
-                    .clickable(enabled = m.canCalculate) { m.calculate() }
-                    .padding(horizontal = 18.dp, vertical = 7.dp),
-            )
-            // Always visible, so the guidance does not depend on opening Info.
-            Text(
-                "Use your exact SI time or a shorter duration",
-                style = MaterialTheme.typography.labelSmall,
-            )
-        }
+        // Dimmed and inert until a surface interval is stated, when residual
+        // gas is being carried — same 40% treatment as Share and Print.
+        Text(
+            text = "Calculate",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .alphaIf(m.canCalculate)
+                .border(1.5.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(4.dp))
+                .clickable(enabled = m.canCalculate) { m.calculate() }
+                .padding(horizontal = 18.dp, vertical = 7.dp),
+        )
         Box(Modifier.weight(1f))
         // Share and Info are permanent. Share used to be hidden until a plan
         // existed, so the bar changed shape after the first Calculate; it now
