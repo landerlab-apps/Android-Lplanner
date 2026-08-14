@@ -74,6 +74,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         decoSetpoints = s.decoSetpoints; slideRate = s.slideRate
         maxPO2 = s.maxPO2; maxEND = s.maxEND
         bottomRMV = s.bottomRMV; decoRMV = s.decoRMV
+        extStopShallow = s.extStopShallow; extStopDeep = s.extStopDeep
         si48 = s.si48; si24 = s.si24; siActual = s.siActual
         decoGasesOn = s.decoGasesOn; decoGases = s.decoGases
         circuitClosed = s.circuitClosed
@@ -97,6 +98,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         s.decoSetpoints = decoSetpoints; s.slideRate = slideRate
         s.maxPO2 = maxPO2; s.maxEND = maxEND
         s.bottomRMV = bottomRMV; s.decoRMV = decoRMV
+        s.extStopShallow = extStopShallow; s.extStopDeep = extStopDeep
         s.si48 = si48; s.si24 = si24; s.siActual = siActual
         s.decoGasesOn = decoGasesOn; s.decoGases = decoGases
         s.circuitClosed = circuitClosed
@@ -140,6 +142,9 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     var maxEND by mutableStateOf("40")
     var bottomRMV by mutableStateOf("19")
     var decoRMV by mutableStateOf("14")
+    /** Extra hold on a deco mix switch, per depth band, 0-10 min. */
+    var extStopShallow by mutableStateOf(0)
+    var extStopDeep by mutableStateOf(0)
 
     // ---- Main window rows ----
     var si48 by mutableStateOf(false)
@@ -243,6 +248,8 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
                 "OcDecoGas: ${one(decoGases)}",
                 "OcDecoMaxPO2: ${one(maxPO2)}",
                 "MaxEND: ${one(maxEND)}",
+                "ExtStopShallow: $extStopShallow",
+                "ExtStopDeep: $extStopDeep",
             ).joinTo(p, "\n")
             if ((useGF || useAltGF) && model != "vval") {
                 val lo = if (useAltGF) altGfLow else gfLow
@@ -400,6 +407,8 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
                 if (decoGasesOn && decoGases.isNotBlank()) add("deco $decoGases")
                 if (deepStops == "p" && !gfOn) add("Pyle $pyleTime min")
                 if (extraSlow) add("extra-slow")
+                if (extStopShallow > 0 || extStopDeep > 0)
+                    add("ext stops $extStopDeep/$extStopShallow min")
                 if (plus3m) add(if (depthsMetric) "+3m" else "+10ft")
                 if (plus5min) add("+5min")
                 if (repetitive) add("SI $surfaceInterval")

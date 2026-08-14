@@ -237,6 +237,20 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
             }
 
             ConfigGroup(
+                "Extended stops on a deco mix switch",
+                "Extra minutes held at the depth where the planner switches to a deco mix, " +
+                    "on top of whatever the model requires. Common practice: settle on the new " +
+                    "gas, confirm the analysis and the PO2, and let the switch do some work for " +
+                    "you. The amount is chosen by the depth of the switch, in two bands. " +
+                    "Switches shallower than 7 m / 23 ft are not extended — the final stop is " +
+                    "already long. The extra time off-gasses you, so it does not simply add to " +
+                    "the total: the stops above it usually shorten.",
+            ) {
+                Stepper0to10("30 m+", m.extStopDeep) { m.extStopDeep = it }
+                Stepper0to10("7–30 m", m.extStopShallow) { m.extStopShallow = it }
+            }
+
+            ConfigGroup(
                 "Deco gas limits",
                 "The planner auto-selects the deco gas with the highest PO2 that stays within Max PO2 " +
                     "and Max END. Set Max PO2 to 1.6 if you want 100% O2 at the 20 ft / 6 m stop; tune it " +
@@ -266,6 +280,19 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                 color = androidx.compose.material3.MaterialTheme.colorScheme.outline,
             )
         }
+    }
+}
+
+/** 0-10 minute picker, matching the Pyle stop-time control. */
+@Composable
+private fun Stepper0to10(label: String, value: Int, onChange: (Int) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("$label : $value min", modifier = Modifier.width(140.dp))
+        TextButton(onClick = { if (value > 0) onChange(value - 1) }) { Text("−") }
+        TextButton(onClick = { if (value < 10) onChange(value + 1) }) { Text("+") }
     }
 }
 

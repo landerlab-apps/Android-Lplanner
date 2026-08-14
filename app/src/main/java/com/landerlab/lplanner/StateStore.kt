@@ -53,6 +53,8 @@ class StateStore(context: Context) {
             s.maxEND = o.optString("maxEND", s.maxEND)
             s.bottomRMV = o.optString("bottomRMV", s.bottomRMV)
             s.decoRMV = o.optString("decoRMV", s.decoRMV)
+            s.extStopShallow = o.optInt("extStopShallow", s.extStopShallow)
+            s.extStopDeep = o.optInt("extStopDeep", s.extStopDeep)
             s.si48 = o.optBoolean("si48", s.si48)
             s.si24 = o.optBoolean("si24", s.si24)
             s.siActual = o.optString("siActual", s.siActual)
@@ -113,6 +115,7 @@ class StateStore(context: Context) {
                 .put("decoSetpoints", s.decoSetpoints).put("slideRate", s.slideRate)
                 .put("maxPO2", s.maxPO2).put("maxEND", s.maxEND)
                 .put("bottomRMV", s.bottomRMV).put("decoRMV", s.decoRMV)
+                .put("extStopShallow", s.extStopShallow).put("extStopDeep", s.extStopDeep)
                 .put("si48", s.si48).put("si24", s.si24).put("siActual", s.siActual)
                 .put("decoGasesOn", s.decoGasesOn).put("decoGases", s.decoGases)
                 .put("circuitClosed", s.circuitClosed)
@@ -159,6 +162,9 @@ class PlannerState {
     var maxEND = "40"
     var bottomRMV = "19"
     var decoRMV = "14"
+    /** Extra hold on a deco mix switch, per depth band, 0-10 min. */
+    var extStopShallow = 0
+    var extStopDeep = 0
     var si48 = false
     var si24 = false
     var siActual = ""
