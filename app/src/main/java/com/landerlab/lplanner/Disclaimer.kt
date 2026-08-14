@@ -31,7 +31,7 @@ CLOSED CIRCUIT
 Switch to Closed to show Set (setpoint) and Sld (Scamahorn slide).
 
 DECO GASES
-Click Yes and list the mixes, e.g. 50, 100. The planner picks the richest one allowed by Max PO2 and Max END. Config can also hold you at the switch for a few extra minutes — see Extended stops.
+Click Yes and list the mixes, e.g. 50, 100. The planner picks the richest one allowed by Max PO2 and Max END. A GasSw row marks where the switch happens. Config can also hold you there for a few extra minutes — see Extended stops.
 
 CONFIG
 Units, water, altitude, model, gradient factors, deep stops, ascent and descent rates, RMVs. Each section carries its own explanation.
