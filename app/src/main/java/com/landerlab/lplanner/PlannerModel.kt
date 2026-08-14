@@ -1,10 +1,11 @@
 package com.landerlab.lplanner
 
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -51,7 +52,11 @@ data class LogEntry(
         get() = SimpleDateFormat("d MMM  HH:mm", Locale.getDefault()).format(date)
 }
 
-class PlannerModel : ViewModel() {
+class PlannerModel(app: Application) : AndroidViewModel(app) {
+
+    // Log entries are persisted to the app's private storage; without this the
+    // log was empty on every launch.
+    private val store = LogStore(app)
 
     // ---- Config sheet ----
     var depthsMetric by mutableStateOf(true)        // Depths: Feet / Meters
@@ -100,7 +105,7 @@ class PlannerModel : ViewModel() {
     // ---- Output ----
     var planText by mutableStateOf("")
     var notes by mutableStateOf("")
-    val log = mutableStateListOf<LogEntry>()
+    val log = mutableStateListOf<LogEntry>().apply { addAll(store.load()) }
     private var lastTissue: String? = null
 
     /** Gradient factors active — they override Conservatism. */
@@ -299,9 +304,16 @@ class PlannerModel : ViewModel() {
         if (planText.isEmpty()) return
         if (log.firstOrNull()?.text == planText) return   // don't stack duplicates
         log.add(0, LogEntry(summary = diveSummary, text = planText))
+        store.save(log)
     }
 
-    fun removeLog(e: LogEntry) { log.removeAll { it.id == e.id } }
+    fun removeLog(e: LogEntry) {
+        log.removeAll { it.id == e.id }
+        store.save(log)
+    }
 
-    fun clearLog() { log.clear() }
+    fun clearLog() {
+        log.clear()
+        store.save(log)
+    }
 }

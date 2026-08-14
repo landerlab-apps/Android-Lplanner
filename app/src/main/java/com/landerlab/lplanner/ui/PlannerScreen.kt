@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -46,8 +49,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.landerlab.lplanner.Disclaimer
 import com.landerlab.lplanner.DiveLevel
 import com.landerlab.lplanner.PlannerModel
+import com.landerlab.lplanner.ZPlan
 
 /**
  * PlannerScreen.kt — Lplanner Android v1.0.0
@@ -60,6 +65,7 @@ import com.landerlab.lplanner.PlannerModel
 fun PlannerScreen(m: PlannerModel) {
     var showConfig by remember { mutableStateOf(false) }
     var showLog by remember { mutableStateOf(false) }
+    var showInfo by remember { mutableStateOf(false) }
 
     // The SwiftUI original switches on horizontalSizeClass == .compact.
     val wide = LocalConfiguration.current.screenWidthDp >= 600
@@ -67,7 +73,8 @@ fun PlannerScreen(m: PlannerModel) {
     Scaffold { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             // Log is now purely a viewer — entries are recorded by Calculate.
-            TopBar(m, onConfig = { showConfig = true }, onLog = { showLog = true })
+            TopBar(m, onConfig = { showConfig = true }, onLog = { showLog = true },
+                onInfo = { showInfo = true })
             HorizontalDivider()
             SurfaceIntervalRow(m)
             HorizontalDivider()
@@ -103,12 +110,18 @@ fun PlannerScreen(m: PlannerModel) {
 
     if (showConfig) ConfigSheet(m) { showConfig = false }
     if (showLog) LogSheet(m) { showLog = false }
+    if (showInfo) InfoDialog { showInfo = false }
 }
 
 // ---- top bar: Config · Log · Calculate (left) · Share (right) ----
 
 @Composable
-private fun TopBar(m: PlannerModel, onConfig: () -> Unit, onLog: () -> Unit) {
+private fun TopBar(
+    m: PlannerModel,
+    onConfig: () -> Unit,
+    onLog: () -> Unit,
+    onInfo: () -> Unit,
+) {
     val context = LocalContext.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -136,7 +149,32 @@ private fun TopBar(m: PlannerModel, onConfig: () -> Unit, onLog: () -> Unit) {
                 context.startActivity(Intent.createChooser(send, "Share dive plan"))
             }
         }
+        // Always available, whether or not a plan has been calculated.
+        BarButton("Info", Icons.Outlined.Info, onInfo)
     }
+}
+
+@Composable
+private fun InfoDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
+        title = { Text("Lplanner", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    Disclaimer.text,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    "Engine ZPlanKit ${ZPlan.version}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+        },
+    )
 }
 
 @Composable

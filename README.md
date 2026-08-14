@@ -1,7 +1,15 @@
 # Lplanner for Android — v1.0.0
 
+> **WARNING**
+>
+> This generated dive schedule could indirectly kill you and probably has bugs.
+> The author does not warrant that it accurately reflects A. A. Buhlmann's
+> algorithm or VVAL-18 algorithm. This dive schedule is experimental, and you
+> use it at your own risk.
+
+
 Android port of the Lplanner iOS dive planner. Jetpack Compose front end over the
-**same ZPlanKit C engine** (v1.7.0) the iOS app uses — compiled here with the NDK,
+**same ZPlanKit C engine** (v1.8.1) the iOS app uses — compiled here with the NDK,
 not reimplemented.
 
 ```
