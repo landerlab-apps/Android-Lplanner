@@ -1,0 +1,21 @@
+# Copy to key.properties (same filename and keys Stock Lite uses) and fill in the
+# two passwords. key.properties is git-ignored — never commit it.
+#
+# These values are taken from the working Stock Lite config at
+#   /Volumes/StockThesis/stocklite-flutter/android/key.properties
+# One keystore can sign any number of apps, and keeping Lplanner on the same key
+# as Stock Lite is what ties both to your Landerlab identity on Play.
+
+storeFile=/Users/carloslander/landerlab-keystore.jks
+keyAlias=landerlab
+
+# Same store/key passwords you use for Stock Lite.
+storePassword=
+keyPassword=
+
+# Note: a copy of this keystore also exists at
+#   /Volumes/KingstonData/KeyStocklite/landerlab-keystore.jks
+# Stock Lite signs with the copy in your home folder. Verify the two are identical
+# before relying on either as a backup:
+#   shasum /Users/carloslander/landerlab-keystore.jks \
+#          "/Volumes/KingstonData/KeyStocklite/landerlab-keystore.jks"
