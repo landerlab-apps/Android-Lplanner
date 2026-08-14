@@ -54,9 +54,62 @@ data class LogEntry(
 
 class PlannerModel(app: Application) : AndroidViewModel(app) {
 
-    // Log entries are persisted to the app's private storage; without this the
-    // log was empty on every launch.
+    // Log entries and the entered dive state are persisted to the app's private
+    // storage; without this both were discarded when the app closed.
     private val store = LogStore(app)
+    private val stateStore = StateStore(app)
+
+
+    private fun apply(s: PlannerState) {
+        depthsMetric = s.depthsMetric; rmvMetric = s.rmvMetric
+        saltWater = s.saltWater; o2Narcotic = s.o2Narcotic
+        model = s.model
+        useGF = s.useGF; gfLow = s.gfLow; gfHigh = s.gfHigh
+        altGfLow = s.altGfLow; altGfHigh = s.altGfHigh
+        extraSlow = s.extraSlow; ndlLow = s.ndlLow
+        altitude = s.altitude; conservatism = s.conservatism
+        deepStops = s.deepStops; pyleTime = s.pyleTime
+        stopDistance = s.stopDistance; lastStop = s.lastStop
+        descentRates = s.descentRates; ascentRates = s.ascentRates
+        decoSetpoints = s.decoSetpoints; slideRate = s.slideRate
+        maxPO2 = s.maxPO2; maxEND = s.maxEND
+        bottomRMV = s.bottomRMV; decoRMV = s.decoRMV
+        si48 = s.si48; si24 = s.si24; siActual = s.siActual
+        decoGasesOn = s.decoGasesOn; decoGases = s.decoGases
+        circuitClosed = s.circuitClosed
+        plus3m = s.plus3m; plus5min = s.plus5min; useAltGF = s.useAltGF
+        levels.clear(); levels.addAll(s.levels)
+    }
+
+    private fun snapshot(): PlannerState {
+        val s = PlannerState()
+        s.depthsMetric = depthsMetric; s.rmvMetric = rmvMetric
+        s.saltWater = saltWater; s.o2Narcotic = o2Narcotic
+        s.model = model
+        s.useGF = useGF; s.gfLow = gfLow; s.gfHigh = gfHigh
+        s.altGfLow = altGfLow; s.altGfHigh = altGfHigh
+        s.extraSlow = extraSlow; s.ndlLow = ndlLow
+        s.altitude = altitude; s.conservatism = conservatism
+        s.deepStops = deepStops; s.pyleTime = pyleTime
+        s.stopDistance = stopDistance; s.lastStop = lastStop
+        s.descentRates = descentRates; s.ascentRates = ascentRates
+        s.decoSetpoints = decoSetpoints; s.slideRate = slideRate
+        s.maxPO2 = maxPO2; s.maxEND = maxEND
+        s.bottomRMV = bottomRMV; s.decoRMV = decoRMV
+        s.si48 = si48; s.si24 = si24; s.siActual = siActual
+        s.decoGasesOn = decoGasesOn; s.decoGases = decoGases
+        s.circuitClosed = circuitClosed
+        s.plus3m = plus3m; s.plus5min = plus5min; s.useAltGF = useAltGF
+        s.levels = levels.toList()
+        return s
+    }
+
+    /**
+     * Write the entered dive state to disk. Called when the app leaves the
+     * foreground, and after any change to the levels list. Compose state has no
+     * single change stream to hook, so these are the deliberate save points.
+     */
+    fun saveState() { stateStore.save(snapshot()) }
 
     // ---- Config sheet ----
     var depthsMetric by mutableStateOf(true)        // Depths: Feet / Meters
@@ -107,6 +160,13 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     var notes by mutableStateOf("")
     val log = mutableStateListOf<LogEntry>().apply { addAll(store.load()) }
     private var lastTissue: String? = null
+
+    init {
+        // Must run after every property above is initialised: Kotlin executes
+        // initialisers in declaration order, so restoring state before the
+        // mutableStateOf delegates exist would dereference null.
+        stateStore.load()?.let { apply(it) }
+    }
 
     /** Gradient factors active — they override Conservatism. */
     val gfOn: Boolean get() = (useGF || useAltGF) && model != "vval"
@@ -209,6 +269,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             levels.add(entry)
         }
         entry = DiveLevel()
+        saveState()
     }
 
     /** Load an existing level back into the entry fields for editing. */
@@ -229,16 +290,19 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         val j = if (up) i - 1 else i + 1
         if (j !in levels.indices) return
         val tmp = levels[i]; levels[i] = levels[j]; levels[j] = tmp
+        saveState()
     }
 
     fun remove(l: DiveLevel) {
         if (editingID == l.id) cancelEdit()
         levels.removeAll { it.id == l.id }
+        saveState()
     }
 
     fun setEnabled(l: DiveLevel, on: Boolean) {
         val i = levels.indexOfFirst { it.id == l.id }
         if (i >= 0) levels[i] = levels[i].copy(enabled = on)
+        saveState()
     }
 
     fun calculate() {
@@ -259,6 +323,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             // viewed. Recording it here means an entry always matches the
             // settings that produced it.
             appendLog()
+            saveState()
         } catch (e: ZPlanException) {
             planText = ""
             notes = e.message ?: "Decompression planning failed"
