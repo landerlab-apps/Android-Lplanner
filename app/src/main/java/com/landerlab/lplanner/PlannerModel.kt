@@ -367,7 +367,10 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
 
     private fun appendLog() {
         if (planText.isEmpty()) return
-        if (log.firstOrNull()?.text == planText) return   // don't stack duplicates
+        // Compare against the whole log, not just the newest entry. Checking
+        // only the first meant a plan you had deleted came straight back the
+        // next time you pressed Calculate on the same settings.
+        if (log.any { it.text == planText }) return
         log.add(0, LogEntry(summary = diveSummary, text = planText))
         store.save(log)
     }
