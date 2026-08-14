@@ -71,11 +71,25 @@ fun PlannerScreen(m: PlannerModel) {
     // The SwiftUI original switches on horizontalSizeClass == .compact.
     val wide = LocalConfiguration.current.screenWidthDp >= 600
 
+    // Hoisted out of the narrow branch: pressing Calculate has to be able to
+    // bring the Plan tab forward. On a phone the plan and every error message
+    // render on the second tab, so calculating from the Dive tab produced no
+    // visible change at all and looked like a dead button.
+    var tab by remember { mutableIntStateOf(0) }
+
     Scaffold { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             // Log is now purely a viewer — entries are recorded by Calculate.
-            TopBar(m, onConfig = { showConfig = true }, onLog = { showLog = true },
-                onInfo = { showInfo = true })
+            TopBar(
+                m,
+                onConfig = { showConfig = true },
+                onLog = { showLog = true },
+                onInfo = { showInfo = true },
+                onCalculate = {
+                    m.calculate()
+                    tab = 1          // show the result, or the reason there isn't one
+                },
+            )
             HorizontalDivider()
             SurfaceIntervalRow(m)
             HorizontalDivider()
@@ -95,7 +109,6 @@ fun PlannerScreen(m: PlannerModel) {
                     ) { PlanPane(m) }
                 }
             } else {
-                var tab by remember { mutableIntStateOf(0) }
                 TabRow(selectedTabIndex = tab) {
                     Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Dive") })
                     Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Plan") })
@@ -122,6 +135,7 @@ private fun TopBar(
     onConfig: () -> Unit,
     onLog: () -> Unit,
     onInfo: () -> Unit,
+    onCalculate: () -> Unit,
 ) {
     val context = LocalContext.current
     Row(
@@ -140,7 +154,7 @@ private fun TopBar(
             modifier = Modifier
                 .alphaIf(m.canCalculate)
                 .border(1.5.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(4.dp))
-                .clickable(enabled = m.canCalculate) { m.calculate() }
+                .clickable(enabled = m.canCalculate, onClick = onCalculate)
                 .padding(horizontal = 18.dp, vertical = 7.dp),
         )
         Box(Modifier.weight(1f))
