@@ -79,6 +79,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         circuitClosed = s.circuitClosed
         plus3m = s.plus3m; plus5min = s.plus5min; useAltGF = s.useAltGF
         levels.clear(); levels.addAll(s.levels)
+        baselineTissue = s.baselineTissue; baselineDate = s.baselineDate
     }
 
     private fun snapshot(): PlannerState {
@@ -101,6 +102,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         s.circuitClosed = circuitClosed
         s.plus3m = plus3m; s.plus5min = plus5min; s.useAltGF = useAltGF
         s.levels = levels.toList()
+        s.baselineTissue = baselineTissue; s.baselineDate = baselineDate
         return s
     }
 
@@ -159,7 +161,11 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     var planText by mutableStateOf("")
     var notes by mutableStateOf("")
     val log = mutableStateListOf<LogEntry>().apply { addAll(store.load()) }
-    private var lastTissue: String? = null
+    /** Loading at the start of the dive being planned; survives quitting. */
+    var baselineTissue by mutableStateOf<String?>(null)
+    var baselineDate by mutableStateOf(0L)
+    /** Loading at the END of the most recent calculation, not yet committed. */
+    private var resultTissue: String? = null
 
     init {
         // Must run after every property above is initialised: Kotlin executes
@@ -171,13 +177,33 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     /** Gradient factors active — they override Conservatism. */
     val gfOn: Boolean get() = (useGF || useAltGF) && model != "vval"
 
+    /** True when residual loading from an earlier dive is being carried. */
+    val hasResidual: Boolean get() = baselineTissue != null
+
+    /** Real time since the residual was recorded, in minutes. */
+    val elapsedMinutes: Double
+        get() = if (baselineDate == 0L) 0.0
+                else ((System.currentTimeMillis() - baselineDate).coerceAtLeast(0L)) / 60000.0
+
+    val elapsedText: String
+        get() {
+            val m = Math.round(elapsedMinutes).toInt()
+            return String.format(Locale.US, "%d:%02d", m / 60, m % 60)
+        }
+
     val repetitive: Boolean get() = si48 || si24 || siActual.isNotEmpty()
 
+    /**
+     * A typed surface interval wins, so what-if planning still works. Otherwise
+     * the real elapsed time since the residual was recorded is used, which is
+     * what makes tracking advance while the app is closed.
+     */
     val surfaceInterval: String
         get() = when {
             siActual.isNotEmpty() -> siActual
             si48 -> "48:00"
             si24 -> "24:00"
+            hasResidual -> elapsedText
             else -> "900:00"
         }
 
@@ -312,10 +338,13 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             return
         }
         try {
-            val r = ZPlan.plan(profileText, if (repetitive) lastTissue else null)
+            // Always planned from the baseline, never from the previous
+            // result, so recalculating an edited dive never stacks it onto
+            // itself.
+            val r = ZPlan.plan(profileText, baselineTissue)
             planText = r.reportText
             notes = r.warnings
-            lastTissue = r.tissueFileText
+            resultTissue = r.tissueFileText
             // Log at the moment of calculation. Logging used to happen when the
             // Log button was pressed, which saved whatever planText happened to
             // hold — i.e. the previous calculation if any setting had changed
@@ -379,6 +408,29 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         log.removeAll { it.id == e.id }
         store.save(log)
     }
+
+    /**
+     * Carry the loading from the calculated dive forward, timestamped now.
+     * Deliberately explicit: calculating must not commit tissue, or editing and
+     * recalculating one dive would compound onto itself.
+     */
+    fun commitDive() {
+        val t = resultTissue ?: return
+        baselineTissue = t
+        baselineDate = System.currentTimeMillis()
+        siActual = ""; si24 = false; si48 = false
+        saveState()
+    }
+
+    /** Declare the diver clean again. */
+    fun clearTissues() {
+        baselineTissue = null
+        baselineDate = 0L
+        resultTissue = null
+        saveState()
+    }
+
+    val canCommit: Boolean get() = resultTissue != null
 
     fun clearLog() {
         log.clear()

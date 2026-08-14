@@ -203,23 +203,60 @@ private fun BarButton(
 
 @Composable
 private fun SurfaceIntervalRow(m: PlannerModel) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-    ) {
-        Text("Surface Interval", style = MaterialTheme.typography.bodyMedium)
-        Check("48 hr", m.si48) { on -> m.si48 = on; if (on) m.si24 = false }
-        Check("24 hr", m.si24) { on -> m.si24 = on; if (on) m.si48 = false }
-        Text("Actual:", style = MaterialTheme.typography.bodyMedium)
-        OutlinedTextField(
-            value = m.siActual,
-            onValueChange = { m.siActual = it.replace("\n", "") },
-            placeholder = { Text("_:__", style = MonoText) },
-            singleLine = true,
-            textStyle = MonoText,
-            modifier = Modifier.width(90.dp),
-        )
+    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Surface Interval", style = MaterialTheme.typography.bodyMedium)
+            Check("48 hr", m.si48) { on -> m.si48 = on; if (on) m.si24 = false }
+            Check("24 hr", m.si24) { on -> m.si24 = on; if (on) m.si48 = false }
+            Text("Actual:", style = MaterialTheme.typography.bodyMedium)
+            OutlinedTextField(
+                value = m.siActual,
+                onValueChange = { m.siActual = it.replace("\n", "") },
+                placeholder = {
+                    Text(if (m.hasResidual) m.elapsedText else "_:__", style = MonoText)
+                },
+                singleLine = true,
+                textStyle = MonoText,
+                modifier = Modifier.width(90.dp),
+            )
+        }
+        // Residual loading must be visible. A schedule that silently depends on
+        // an earlier dive is exactly what a diver has to be able to see and cancel.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (m.hasResidual) {
+                Text(
+                    "Residual gas carried — surfaced ${m.elapsedText} ago",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Text(
+                    "Clear",
+                    style = MaterialTheme.typography.bodySmall,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { m.clearTissues() },
+                )
+            } else {
+                Text(
+                    "No residual gas — planning clean",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+            if (m.canCommit) {
+                Text(
+                    "Dive done → carry gas forward",
+                    style = MaterialTheme.typography.bodySmall,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { m.commitDive() },
+                )
+            }
+        }
     }
 }
 

@@ -62,6 +62,8 @@ class StateStore(context: Context) {
             s.plus3m = o.optBoolean("plus3m", s.plus3m)
             s.plus5min = o.optBoolean("plus5min", s.plus5min)
             s.useAltGF = o.optBoolean("useAltGF", s.useAltGF)
+            s.baselineTissue = if (o.isNull("baselineTissue")) null else o.optString("baselineTissue")
+            s.baselineDate = o.optLong("baselineDate", 0L)
 
             val arr = o.optJSONArray("levels") ?: JSONArray()
             s.levels = buildList {
@@ -117,6 +119,8 @@ class StateStore(context: Context) {
                 .put("plus3m", s.plus3m).put("plus5min", s.plus5min)
                 .put("useAltGF", s.useAltGF)
                 .put("levels", levels)
+                .put("baselineTissue", s.baselineTissue ?: JSONObject.NULL)
+                .put("baselineDate", s.baselineDate)
 
             val tmp = File(file.parentFile, "state.json.tmp")
             tmp.writeText(o.toString(2))
@@ -165,4 +169,13 @@ class PlannerState {
     var plus5min = false
     var useAltGF = false
     var levels: List<DiveLevel> = emptyList()
+
+    /**
+     * Residual inert gas carried between sessions. [baselineTissue] is the
+     * loading at the START of the dive being planned, with the wall-clock time
+     * it was recorded. Storing the state before the current dive rather than
+     * after it is what lets a plan be recalculated without stacking onto itself.
+     */
+    var baselineTissue: String? = null
+    var baselineDate: Long = 0L
 }
