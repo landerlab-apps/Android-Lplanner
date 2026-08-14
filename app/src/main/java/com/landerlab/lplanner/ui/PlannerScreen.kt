@@ -130,13 +130,16 @@ private fun TopBar(
     ) {
         BarButton("Config", Icons.Filled.Settings, onClick = onConfig)
         BarButton("Log", Icons.AutoMirrored.Filled.MenuBook, onClick = onLog)
+        // Dimmed and inert until a surface interval is stated, when residual
+        // gas is being carried — same 40% treatment as Share and Print.
         Text(
             text = "Calculate",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
+                .alphaIf(m.canCalculate)
                 .border(1.5.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(4.dp))
-                .clickable { m.calculate() }
+                .clickable(enabled = m.canCalculate) { m.calculate() }
                 .padding(horizontal = 18.dp, vertical = 7.dp),
         )
         Box(Modifier.weight(1f))
@@ -231,7 +234,10 @@ private fun SurfaceIntervalRow(m: PlannerModel) {
         ) {
             if (m.hasResidual) {
                 Text(
-                    "Residual gas carried — surfaced ${m.elapsedText} ago",
+                    if (m.canCalculate)
+                        "Residual gas carried — surfaced ${m.elapsedText} ago"
+                    else
+                        "Residual gas carried — set a surface interval to calculate",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )

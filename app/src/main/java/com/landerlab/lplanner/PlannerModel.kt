@@ -194,6 +194,14 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     val repetitive: Boolean get() = si48 || si24 || siActual.isNotEmpty()
 
     /**
+     * While residual gas is carried, a surface interval must be stated before a
+     * plan can be produced. Guessing it from the clock would let a diver get a
+     * schedule without ever confronting the fact that a previous dive is still
+     * loaded, which is the one thing a repetitive plan must not hide.
+     */
+    val canCalculate: Boolean get() = !hasResidual || repetitive
+
+    /**
      * A typed surface interval wins, so what-if planning still works. Otherwise
      * the real elapsed time since the residual was recorded is used, which is
      * what makes tracking advance while the app is closed.
@@ -332,6 +340,12 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun calculate() {
+        if (!canCalculate) {
+            notes = "Residual gas is carried from an earlier dive. " +
+                "Set the surface interval — 48 hr, 24 hr, or Actual — before calculating."
+            planText = ""
+            return
+        }
         if (levels.none { it.enabled }) {
             notes = "No enabled dive levels — add a Depth / Time / O2 row first."
             planText = ""
