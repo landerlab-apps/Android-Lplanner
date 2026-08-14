@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -347,6 +348,8 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun calculate() {
+        Log.i(TAG, "calculate: levels=${levels.size} enabled=${levels.count { it.enabled }} " +
+                   "residual=$hasResidual canCalculate=$canCalculate")
         if (!canCalculate) {
             notes = "Residual gas is carried from an earlier dive. " +
                 "Set the surface interval — 48 hr, 24 hr, or Actual — before calculating."
@@ -363,6 +366,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             // result, so recalculating an edited dive never stacks it onto
             // itself.
             val r = ZPlan.plan(profileText, baselineTissue)
+            Log.i(TAG, "calculate: engine returned ${r.reportText.length} chars")
             planText = r.reportText
             notes = r.warnings
             resultTissue = r.tissueFileText
@@ -375,10 +379,19 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             appendLog()
             saveState()
         } catch (e: ZPlanException) {
+            Log.w(TAG, "calculate: engine refused the profile", e)
             planText = ""
             notes = e.message ?: "Decompression planning failed"
+        } catch (e: Throwable) {
+            // A native failure would otherwise take the whole app down with no
+            // clue on screen. Report it where the diver can see it.
+            Log.e(TAG, "calculate: unexpected failure", e)
+            planText = ""
+            notes = "Planner error: ${e.javaClass.simpleName} ${e.message ?: ""}"
         }
     }
+
+    private companion object { const val TAG = "Lplanner" }
 
     /** Short description of the dive and the settings behind a logged plan. */
     private val diveSummary: String

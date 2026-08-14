@@ -98,6 +98,20 @@ fun PlannerScreen(m: PlannerModel) {
             AutoRow(m)
             HorizontalDivider()
 
+            // Messages live above the tabs so they are visible whichever tab is
+            // showing. Previously they rendered inside the Plan pane, so a
+            // refusal like "no enabled dive levels" was invisible from the Dive
+            // tab and Calculate looked like it had done nothing at all.
+            if (m.notes.isNotEmpty()) {
+                Text(
+                    m.notes,
+                    style = MonoTextSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+                HorizontalDivider()
+            }
+
             if (wide) {
                 Row(Modifier.fillMaxSize()) {
                     Column(
@@ -443,15 +457,6 @@ private fun EntryField(label: String, value: String, onChange: (String) -> Unit)
 @Composable
 private fun PlanPane(m: PlannerModel) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (m.notes.isNotEmpty()) {
-            // Functional dive warnings are rendered in red, per the ZPlanKit README.
-            Text(
-                text = m.notes,
-                style = MonoText,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
         // The report is fixed-width ASCII (~58 columns). Letting it soft-wrap
         // breaks every row — the EAD column folds onto the next line and stops
         // lining up with its header. Scroll horizontally instead of wrapping.
