@@ -14,12 +14,10 @@ import androidx.compose.ui.unit.sp
 /**
  * Theme.kt — Lplanner Android v1.0.0
  *
- * Monochrome brand: black on white, greys for secondary text and strokes.
- * The single exception is [WarningRed] — functional dive warnings must be red,
- * per the ZPlanKit README.
+ * Strictly greyscale: black on white, greys for secondary text and strokes.
+ * Nothing is coloured, including warnings — emphasis comes from weight and
+ * placement instead.
  */
-
-val WarningRed = Color(0xFFB00020)
 
 private val Mono = lightColorScheme(
     primary = Color.Black,
@@ -34,7 +32,7 @@ private val Mono = lightColorScheme(
     onSurfaceVariant = Color(0xFF333333),
     outline = Color(0xFF808080),
     outlineVariant = Color(0xFFCCCCCC),
-    error = WarningRed,
+    error = Color.Black,        // greyscale brand: no red anywhere
     onError = Color.White,
 )
 
@@ -51,7 +49,7 @@ private val MonoDark = darkColorScheme(
     onSurfaceVariant = Color(0xFFDDDDDD),
     outline = Color(0xFF999999),
     outlineVariant = Color(0xFF444444),
-    error = Color(0xFFFF6B6B),
+    error = Color.White,        // greyscale brand: no red anywhere
     onError = Color.Black,
 )
 
