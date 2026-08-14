@@ -130,18 +130,26 @@ private fun TopBar(
     ) {
         BarButton("Config", Icons.Filled.Settings, onClick = onConfig)
         BarButton("Log", Icons.AutoMirrored.Filled.MenuBook, onClick = onLog)
-        // Dimmed and inert until a surface interval is stated, when residual
-        // gas is being carried — same 40% treatment as Share and Print.
-        Text(
-            text = "Calculate",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .alphaIf(m.canCalculate)
-                .border(1.5.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(4.dp))
-                .clickable(enabled = m.canCalculate) { m.calculate() }
-                .padding(horizontal = 18.dp, vertical = 7.dp),
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Dimmed and inert until a surface interval is stated, when residual
+            // gas is being carried — same 40% treatment as Share and Print.
+            Text(
+                text = "Calculate",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .alphaIf(m.canCalculate)
+                    .border(1.5.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(4.dp))
+                    .clickable(enabled = m.canCalculate) { m.calculate() }
+                    .padding(horizontal = 18.dp, vertical = 7.dp),
+            )
+            // Always visible, so the caveat does not depend on opening Info.
+            Text(
+                "Experimental — verify before diving",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Box(Modifier.weight(1f))
         // Share and Info are permanent. Share used to be hidden until a plan
         // existed, so the bar changed shape after the first Calculate; it now
@@ -172,7 +180,7 @@ private fun InfoDialog(onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
-                    "Engine ZPlanKit ${ZPlan.version}",
+                    ZPlan.version,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
