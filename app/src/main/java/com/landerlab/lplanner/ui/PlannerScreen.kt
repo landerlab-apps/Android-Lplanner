@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.landerlab.lplanner.Disclaimer
 import com.landerlab.lplanner.DiveLevel
+import com.landerlab.lplanner.Manual
 import com.landerlab.lplanner.PlannerModel
 import com.landerlab.lplanner.ZPlan
 
@@ -143,11 +144,10 @@ private fun TopBar(
                     .clickable(enabled = m.canCalculate) { m.calculate() }
                     .padding(horizontal = 18.dp, vertical = 7.dp),
             )
-            // Always visible, so the caveat does not depend on opening Info.
+            // Always visible, so the guidance does not depend on opening Info.
             Text(
-                "Experimental — verify before diving",
+                "Use your exact SI time or a shorter duration",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
             )
         }
         Box(Modifier.weight(1f))
@@ -173,12 +173,18 @@ private fun InfoDialog(onDismiss: () -> Unit) {
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
         title = { Text("Lplanner", fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            ) {
                 Text(
                     Disclaimer.text,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Text(Manual.text, style = MaterialTheme.typography.bodySmall)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Text(
                     ZPlan.version,
                     style = MaterialTheme.typography.bodySmall,
