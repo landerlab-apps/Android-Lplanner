@@ -128,8 +128,8 @@ private fun TopBar(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        BarButton("Config", Icons.Filled.Settings, onConfig)
-        BarButton("Log", Icons.AutoMirrored.Filled.MenuBook, onLog)
+        BarButton("Config", Icons.Filled.Settings, onClick = onConfig)
+        BarButton("Log", Icons.AutoMirrored.Filled.MenuBook, onClick = onLog)
         Text(
             text = "Calculate",
             style = MaterialTheme.typography.titleSmall,
@@ -140,17 +140,18 @@ private fun TopBar(
                 .padding(horizontal = 18.dp, vertical = 7.dp),
         )
         Box(Modifier.weight(1f))
-        if (m.planText.isNotEmpty()) {
-            BarButton("Share", Icons.Filled.Share) {
-                val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, m.planText)
-                }
-                context.startActivity(Intent.createChooser(send, "Share dive plan"))
+        // Share and Info are permanent. Share used to be hidden until a plan
+        // existed, so the bar changed shape after the first Calculate; it now
+        // stays put and dims while there is nothing to share.
+        val noPlan = m.planText.isEmpty()
+        BarButton("Share", Icons.Filled.Share, enabled = !noPlan) {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, m.planText)
             }
+            context.startActivity(Intent.createChooser(send, "Share dive plan"))
         }
-        // Always available, whether or not a plan has been calculated.
-        BarButton("Info", Icons.Outlined.Info, onInfo)
+        BarButton("Info", Icons.Outlined.Info, onClick = onInfo)
     }
 }
 
@@ -178,13 +179,19 @@ private fun InfoDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun BarButton(title: String, icon: ImageVector, onClick: () -> Unit) {
+private fun BarButton(
+    title: String,
+    icon: ImageVector,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
         modifier = Modifier
+            .alphaIf(enabled)
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Icon(icon, contentDescription = title, modifier = Modifier.size(20.dp))
