@@ -80,7 +80,10 @@ fun CompactSetupChips(m: PlannerModel) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Chip(if (m.circuitClosed) "Closed" else "Open", m.circuitClosed) {
+            // OC / CCR rather than Open / Closed. As a segmented control both
+            // states were on screen so "Open" was unambiguous; as a single chip
+            // it has to name itself, and these are the terms divers use.
+            Chip(if (m.circuitClosed) "CCR" else "OC", m.circuitClosed) {
                 m.circuitClosed = !m.circuitClosed
             }
             Chip(

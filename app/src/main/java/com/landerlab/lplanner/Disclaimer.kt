@@ -28,7 +28,7 @@ object Manual {
 Type Depth, Time and O2 % — plus He % for trimix — then press Add >>. Repeat for each level. Tap a level to edit it, use the arrows to reorder, × to remove. Click a level's box to leave it out without deleting it.
 
 CLOSED CIRCUIT
-Switch to Closed to show Set (setpoint) and Sld (Scamahorn slide).
+Tap the OC chip so it reads CCR — on a tablet, switch Open to Closed. Set (setpoint) and Sld (Scamahorn slide) then appear beside the mix.
 
 DECO GASES
 Click Yes and list the mixes, e.g. 50, 100. The planner picks the richest one allowed by Max PO2 and Max END. A GasSw row marks where the switch happens. Config can also hold you there for a few extra minutes — see Extended stops.
