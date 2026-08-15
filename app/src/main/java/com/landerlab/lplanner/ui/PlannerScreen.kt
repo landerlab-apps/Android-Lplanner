@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -91,12 +92,21 @@ fun PlannerScreen(m: PlannerModel) {
                 },
             )
             HorizontalDivider()
-            SurfaceIntervalRow(m)
-            HorizontalDivider()
-            DecoGasRow(m)
-            HorizontalDivider()
-            AutoRow(m)
-            HorizontalDivider()
+
+            // Tablet keeps the original three rows. The phone gets one wrapping
+            // chip strip instead: those rows took roughly 40% of a 1080x2400
+            // screen and the Actual field ran off the right edge.
+            if (wide) {
+                SurfaceIntervalRow(m)
+                HorizontalDivider()
+                DecoGasRow(m)
+                HorizontalDivider()
+                AutoRow(m)
+                HorizontalDivider()
+            } else {
+                CompactSetupChips(m)
+                HorizontalDivider()
+            }
 
             // Messages live above the tabs so they are visible whichever tab is
             // showing. Previously they rendered inside the Plan pane, so a
@@ -128,9 +138,17 @@ fun PlannerScreen(m: PlannerModel) {
                     Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Plan") })
                 }
                 Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)
+                    Modifier
+                        .fillMaxSize()
+                        // Without this the keyboard covers whatever is being
+                        // typed. enableEdgeToEdge() means the manifest's
+                        // adjustResize is not enough on its own — Compose has
+                        // to be told about the IME inset.
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(12.dp)
                 ) {
-                    if (tab == 0) DiveColumn(m) else PlanPane(m)
+                    if (tab == 0) CompactDiveColumn(m) else PlanPane(m)
                 }
             }
         }
@@ -405,6 +423,23 @@ private fun DiveColumn(m: PlannerModel) {
             color = MaterialTheme.colorScheme.outline,
         )
 
+        m.levels.forEach { l -> LevelRow(m, l) }
+    }
+}
+
+/** Phone version: the one-line entry row, then the levels right below it. */
+@Composable
+private fun CompactDiveColumn(m: PlannerModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        CompactEntryRow(m)
+        HorizontalDivider()
+        if (m.levels.isEmpty()) {
+            Text(
+                "No levels yet — type D, T and O2, then Add.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
         m.levels.forEach { l -> LevelRow(m, l) }
     }
 }
