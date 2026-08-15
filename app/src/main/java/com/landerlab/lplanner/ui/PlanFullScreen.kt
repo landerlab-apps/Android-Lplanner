@@ -100,7 +100,7 @@ fun PlanFullScreen(m: PlannerModel, onClose: () -> Unit) {
     }
 
     val text = m.planText.ifEmpty { "No plan yet — press Calculate." }
-    val columns = remember(text) { text.lines().maxOfOrNull { it.length } ?: 1 }
+    val longest = remember(text) { text.lines().maxByOrNull { it.length }.orEmpty() }
     val taps = remember { MutableInteractionSource() }
 
     Box(
@@ -113,18 +113,24 @@ fun PlanFullScreen(m: PlannerModel, onClose: () -> Unit) {
             val density = LocalDensity.current
             val measurer = rememberTextMeasurer()
 
-            // Measure one character at a reference size and scale from there.
-            // Monospace means every character is that width, so the report is
-            // exactly `columns` of them — no need to lay the whole thing out to
-            // discover how wide it wants to be.
-            val fitted = remember(columns, maxWidth, zoom) {
-                val reference = 100f
-                val charPx = measurer.measure(
-                    AnnotatedString("0"),
+            // Lay the LONGEST LINE out at a reference size and scale from what
+            // it actually measured.
+            //
+            // Measuring one character and multiplying by the column count was
+            // wrong on the phone: the per-character advance rounds up to whole
+            // pixels, and 58 columns of that rounding put the EAD column off
+            // the right edge at a nominal 100% "fit". Measuring the real line
+            // has no such error, and costs one extra layout pass on a string
+            // that is already in the text cache.
+            val fitted = remember(longest, maxWidth, zoom) {
+                val reference = 50f
+                val linePx = measurer.measure(
+                    AnnotatedString(longest),
                     TextStyle(fontFamily = FontFamily.Monospace, fontSize = reference.sp),
+                    softWrap = false,
                 ).size.width.toFloat()
                 val availablePx = with(density) { (maxWidth - 16.dp).toPx() }
-                val exact = reference * availablePx / (charPx * columns)
+                val exact = if (linePx > 0f) reference * availablePx / linePx else 12f
                 // Floored at 7 sp: smaller than that is unreadable anyway, and
                 // the horizontal scroll below takes over.
                 (exact * zoom).coerceIn(7f, 48f)
@@ -148,7 +154,16 @@ fun PlanFullScreen(m: PlannerModel, onClose: () -> Unit) {
                     .clickable(interactionSource = taps, indication = null) {
                         chrome = !chrome
                     }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(
+                        start = 8.dp,
+                        end = 8.dp,
+                        top = 4.dp,
+                        // Clear the control bar rather than letting it sit on
+                        // top of the schedule. Invisible in portrait, where
+                        // there is height to spare; in landscape it was hiding
+                        // a stop.
+                        bottom = if (chrome) 60.dp else 4.dp,
+                    ),
             )
         }
 
@@ -167,10 +182,16 @@ fun PlanFullScreen(m: PlannerModel, onClose: () -> Unit) {
                     Chip("A+") { zoom = (zoom * 1.18f).coerceAtMost(4f) }
                     Chip("Fit", zoom in 0.99f..1.01f) { zoom = 1f }
                     Chip("Sun", sunlight) { sunlight = !sunlight }
+                    // Just the number. "· tap to hide" folded onto a second
+                    // line in portrait once four chips were in front of it, and
+                    // a hint that makes the bar taller is not worth its keep —
+                    // it is in the manual instead.
                     Text(
-                        "${(zoom * 100).roundToInt()}%  ·  tap to hide",
+                        "${(zoom * 100).roundToInt()}%",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.weight(1f),
                     )
                     Box(
