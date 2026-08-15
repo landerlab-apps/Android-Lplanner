@@ -33,6 +33,9 @@ Tap the OC chip so it reads CCR — on a tablet, switch Open to Closed. Set (set
 DECO GASES
 Click Yes and list the mixes, e.g. 50, 100. The planner picks the richest one allowed by Max PO2 and Max END. A GasSw row marks where the switch happens. Config can also hold you there for a few extra minutes — see Extended stops.
 
+SETTINGS STRIP
+On a phone the settings sit in one strip of chips above the tabs. It folds to a single summary line on the Plan tab so the schedule gets the full screen; the chevron opens or closes it by hand. altGF is a plain on/off here — its two numbers are set in Config.
+
 CONFIG
 Units, water, altitude, model, gradient factors, deep stops, ascent and descent rates, RMVs. Each section carries its own explanation.
 

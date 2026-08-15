@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.landerlab.lplanner.PlannerModel
 
@@ -70,42 +76,83 @@ fun Chip(label: String, active: Boolean = false, onClick: () -> Unit) {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CompactSetupChips(m: PlannerModel) {
+fun CompactSetupChips(m: PlannerModel, expanded: Boolean, onToggle: () -> Unit) {
     var editDeco by remember { mutableStateOf(false) }
-    var editAltGf by remember { mutableStateOf(false) }
     var editSI by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            // OC / CCR rather than Open / Closed. As a segmented control both
-            // states were on screen so "Open" was unambiguous; as a single chip
-            // it has to name itself, and these are the terms divers use.
-            Chip(if (m.circuitClosed) "CCR" else "OC", m.circuitClosed) {
-                m.circuitClosed = !m.circuitClosed
+        if (!expanded) {
+            // One line: what is set, and a chevron to bring the chips back.
+            // Reading a schedule needs height, not settings, so this folds away
+            // on the Plan tab and returns on the Dive tab.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle),
+            ) {
+                Text(
+                    settingsSummary(m),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.Filled.ExpandMore,
+                    contentDescription = "Show settings",
+                    modifier = Modifier.size(20.dp),
+                )
             }
-            Chip(
-                if (m.decoGasesOn && m.decoGases.isNotBlank()) "Deco ${m.decoGases}" else "Deco off",
-                m.decoGasesOn,
-            ) { editDeco = true }
-            Chip(if (m.depthsMetric) "+3m" else "+10ft", m.plus3m) { m.plus3m = !m.plus3m }
-            Chip("+5min", m.plus5min) { m.plus5min = !m.plus5min }
-            if (m.model != "vval") {
-                Chip("altGF ${m.altGfLow}/${m.altGfHigh}", m.useAltGF) { editAltGf = true }
-            }
-            Chip(
-                when {
-                    m.siActual.isNotEmpty() -> "SI ${m.siActual}"
-                    m.si48 -> "SI 48 hr"
-                    m.si24 -> "SI 24 hr"
-                    else -> "SI —"
-                },
-                m.repetitive,
-            ) { editSI = true }
         }
 
+        if (expanded) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                // OC / CCR rather than Open / Closed. As a segmented control both
+                // states were on screen so "Open" was unambiguous; as a single chip
+                // it has to name itself, and these are the terms divers use.
+                Chip(if (m.circuitClosed) "CCR" else "OC", m.circuitClosed) {
+                    m.circuitClosed = !m.circuitClosed
+                }
+                Chip(
+                    if (m.decoGasesOn && m.decoGases.isNotBlank()) "Deco ${m.decoGases}" else "Deco off",
+                    m.decoGasesOn,
+                ) { editDeco = true }
+                Chip(if (m.depthsMetric) "+3m" else "+10ft", m.plus3m) { m.plus3m = !m.plus3m }
+                Chip("+5min", m.plus5min) { m.plus5min = !m.plus5min }
+                // Toggle only. Carrying "90/90" in the label cost about a quarter
+                // of the row to show two numbers that are set once and then left
+                // alone; they are edited in Config.
+                if (m.model != "vval") {
+                    Chip("altGF", m.useAltGF) { m.useAltGF = !m.useAltGF }
+                }
+                Chip(
+                    when {
+                        m.siActual.isNotEmpty() -> "SI ${m.siActual}"
+                        m.si48 -> "SI 48 hr"
+                        m.si24 -> "SI 24 hr"
+                        else -> "SI —"
+                    },
+                    m.repetitive,
+                ) { editSI = true }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable(onClick = onToggle).padding(4.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.ExpandLess,
+                        contentDescription = "Hide settings",
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+
+        // Deliberately OUTSIDE the collapsible part. A carried-gas warning that
+        // can be folded out of sight is the one thing here that must not be.
         // Only shown when gas is actually carried. "No residual gas — planning
         // clean" used to take three lines to say nothing had happened.
         if (m.hasResidual) {
@@ -150,18 +197,6 @@ fun CompactSetupChips(m: PlannerModel) {
         }
     }
 
-    if (editAltGf) {
-        EditDialog("Alternative gradient factors", onDismiss = { editAltGf = false }) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Chip(if (m.useAltGF) "In use" else "Not used", m.useAltGF) {
-                    m.useAltGF = !m.useAltGF
-                }
-                NumField("low", m.altGfLow, Modifier.width(76.dp)) { m.altGfLow = it }
-                NumField("high", m.altGfHigh, Modifier.width(76.dp)) { m.altGfHigh = it }
-            }
-        }
-    }
-
     if (editSI) {
         EditDialog("Surface interval", onDismiss = { editSI = false }) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -181,6 +216,22 @@ fun CompactSetupChips(m: PlannerModel) {
         }
     }
 }
+
+/** Terse one-line rendering of the chip strip, for when it is folded away. */
+private fun settingsSummary(m: PlannerModel): String = buildList {
+    add(if (m.circuitClosed) "CCR" else "OC")
+    if (m.decoGasesOn && m.decoGases.isNotBlank()) add("Deco ${m.decoGases}")
+    if (m.plus3m) add(if (m.depthsMetric) "+3m" else "+10ft")
+    if (m.plus5min) add("+5min")
+    // The numbers are worth showing here even though the chip no longer
+    // carries them — this is text, and it costs nothing.
+    if (m.useAltGF && m.model != "vval") add("altGF ${m.altGfLow}/${m.altGfHigh}")
+    when {
+        m.siActual.isNotEmpty() -> add("SI ${m.siActual}")
+        m.si48 -> add("SI 48 hr")
+        m.si24 -> add("SI 24 hr")
+    }
+}.joinToString("  ·  ")
 
 @Composable
 private fun EditDialog(title: String, onDismiss: () -> Unit, body: @Composable () -> Unit) {

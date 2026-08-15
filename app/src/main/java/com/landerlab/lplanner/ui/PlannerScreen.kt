@@ -84,6 +84,13 @@ fun PlannerScreen(m: PlannerModel) {
     // visible change at all and looked like a dead button.
     var tab by remember { mutableIntStateOf(0) }
 
+    // Keyed on `tab`, so switching tabs resets it: the chip strip folds away on
+    // the Plan tab, where the schedule wants every line it can get, and returns
+    // on the Dive tab. Keying rather than deriving still leaves the chevron free
+    // to override it — the override just lasts until you change tabs again,
+    // which is the point at which the default is right anyway.
+    var chipsOpen by remember(tab) { mutableStateOf(tab == 0) }
+
     Scaffold { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             // Log is now purely a viewer — entries are recorded by Calculate.
@@ -110,7 +117,7 @@ fun PlannerScreen(m: PlannerModel) {
                 AutoRow(m)
                 HorizontalDivider()
             } else {
-                CompactSetupChips(m)
+                CompactSetupChips(m, expanded = chipsOpen) { chipsOpen = !chipsOpen }
                 HorizontalDivider()
             }
 
