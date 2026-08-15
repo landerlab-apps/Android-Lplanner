@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -101,23 +103,35 @@ fun Seg(
 fun LabeledField(
     label: String,
     value: String,
+    modifier: Modifier = Modifier.width(150.dp),
     enabled: Boolean = true,
-    fieldWidth: Int = 96,
+    numeric: Boolean = true,
     onChange: (String) -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.alphaIf(enabled),
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+    // Label ABOVE the field, not beside it. Side by side, a pair like
+    // "Alt GF Low [96dp]  Alt GF High [96dp]" needs ~330 dp of label and box on
+    // a 360 dp screen: the first field took the room and the second was crushed
+    // to a sliver. Stacking makes the width depend only on the field, so a pair
+    // splits the row evenly at any width. Same for Stop distance / Last stop.
+    Column(modifier.alphaIf(enabled)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.outline,
+            maxLines = 1,
+        )
         OutlinedTextField(
             value = value,
             onValueChange = { onChange(it.replace("\n", "")) },
             singleLine = true,
             enabled = enabled,
             textStyle = MonoText,
-            modifier = Modifier.width(fieldWidth.dp),
+            // Number pad rather than QWERTY, as on the main screen. Every field
+            // here except the gas lists is a number.
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (numeric) KeyboardType.Decimal else KeyboardType.Text,
+            ),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

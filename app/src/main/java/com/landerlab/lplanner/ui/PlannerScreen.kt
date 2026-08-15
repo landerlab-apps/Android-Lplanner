@@ -70,7 +70,13 @@ fun PlannerScreen(m: PlannerModel) {
     var showInfo by remember { mutableStateOf(false) }
 
     // The SwiftUI original switches on horizontalSizeClass == .compact.
-    val wide = LocalConfiguration.current.screenWidthDp >= 600
+    //
+    // Height matters as much as width. A phone on its side reports ~870 x 390 dp
+    // and so passed a width-only test, landing on the tablet layout — three
+    // full-width setup rows plus the top bar left barely 100 dp for the plan,
+    // which is why landscape was unusable. A real tablet is wide AND tall.
+    val cfg = LocalConfiguration.current
+    val wide = cfg.screenWidthDp >= 600 && cfg.screenHeightDp >= 480
 
     // Hoisted out of the narrow branch: pressing Calculate has to be able to
     // bring the Plan tab forward. On a phone the plan and every error message

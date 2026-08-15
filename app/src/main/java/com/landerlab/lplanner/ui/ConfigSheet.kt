@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.landerlab.lplanner.BuildConfig
 import com.landerlab.lplanner.PlannerModel
 import com.landerlab.lplanner.ZPlan
 import kotlin.math.roundToInt
@@ -93,9 +94,9 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
 
                 if (m.model != "vval") {
                     Check("Gradient factors", m.useGF) { m.useGF = it }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        LabeledField("GF Low", m.gfLow, enabled = m.useGF) { m.gfLow = it }
-                        LabeledField("GF High", m.gfHigh, enabled = m.useGF) { m.gfHigh = it }
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
+                        LabeledField("GF Low", m.gfLow, Modifier.weight(1f), enabled = m.useGF) { m.gfLow = it }
+                        LabeledField("GF High", m.gfHigh, Modifier.weight(1f), enabled = m.useGF) { m.gfHigh = it }
                     }
                 }
             }
@@ -111,9 +112,9 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                         "while keeping the shallow stops short. Editable here or directly beside the " +
                         "altGF checkbox on the main screen.",
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        LabeledField("Alt GF Low", m.altGfLow) { m.altGfLow = it }
-                        LabeledField("Alt GF High", m.altGfHigh) { m.altGfHigh = it }
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
+                        LabeledField("Alt GF Low", m.altGfLow, Modifier.weight(1f)) { m.altGfLow = it }
+                        LabeledField("Alt GF High", m.altGfHigh, Modifier.weight(1f)) { m.altGfHigh = it }
                     }
                 }
 
@@ -185,9 +186,9 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                             TextButton(onClick = { if (m.pyleTime < 5) m.pyleTime++ }) { Text("+") }
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        LabeledField("Stop distance", m.stopDistance) { m.stopDistance = it }
-                        LabeledField("Last stop", m.lastStop) { m.lastStop = it }
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
+                        LabeledField("Stop distance", m.stopDistance, Modifier.weight(1f)) { m.stopDistance = it }
+                        LabeledField("Last stop", m.lastStop, Modifier.weight(1f)) { m.lastStop = it }
                     }
                 }
             }
@@ -226,14 +227,14 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                 "Deco Set Point (CCR) / Slide rate",
                 "Setpoint changes by depth range during CCR deco, one per line, e.g. 80-30, 1.4 — a " +
                     "setpoint of 0 switches to open circuit for that range. Only active when the circuit " +
-                    "is set to Closed on the main screen (disabled for open-circuit dives). Slide rate is " +
+                    "is set to CCR on the main screen (disabled for open-circuit dives). Slide rate is " +
                     "the PO2 burned off per minute during a Scamahorn Slide: enter a bottom setpoint like " +
                     "1.2-1.6 to ride the descent PO2 spike down to the setpoint for a deco advantage.",
             ) {
                 RateEditor(m.decoSetpoints, enabled = m.circuitClosed, minHeight = 60) {
                     m.decoSetpoints = it
                 }
-                LabeledField("Slide rate (PO2/min)", m.slideRate) { m.slideRate = it }
+                LabeledField("Slide rate  PO2/min", m.slideRate, Modifier.width(190.dp)) { m.slideRate = it }
             }
 
             ConfigGroup(
@@ -256,9 +257,9 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                     "and Max END. Set Max PO2 to 1.6 if you want 100% O2 at the 20 ft / 6 m stop; tune it " +
                     "down to lower CNS exposure at the cost of longer deco.",
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    LabeledField("Max PO2", m.maxPO2) { m.maxPO2 = it }
-                    LabeledField("Max END", m.maxEND) { m.maxEND = it }
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
+                    LabeledField("Max PO2", m.maxPO2, Modifier.weight(1f)) { m.maxPO2 = it }
+                    LabeledField("Max END", m.maxEND, Modifier.weight(1f)) { m.maxEND = it }
                 }
             }
 
@@ -268,14 +269,14 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                     "is usually lower than Bottom, since you are more at rest hanging on the line. If you " +
                     "don't know your RMV, measure it.",
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    LabeledField("Bottom", m.bottomRMV) { m.bottomRMV = it }
-                    LabeledField("Deco", m.decoRMV) { m.decoRMV = it }
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
+                    LabeledField("Bottom", m.bottomRMV, Modifier.weight(1f)) { m.bottomRMV = it }
+                    LabeledField("Deco", m.decoRMV, Modifier.weight(1f)) { m.decoRMV = it }
                 }
             }
 
             Text(
-                "Lplanner 1.0.0 · engine ZPlanKit ${ZPlan.version}",
+                "Lplanner ${BuildConfig.VERSION_NAME} · engine ZPlanKit ${ZPlan.version}",
                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                 color = androidx.compose.material3.MaterialTheme.colorScheme.outline,
             )

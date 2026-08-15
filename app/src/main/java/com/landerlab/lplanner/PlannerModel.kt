@@ -170,8 +170,12 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     /** Loading at the start of the dive being planned; survives quitting. */
     var baselineTissue by mutableStateOf<String?>(null)
     var baselineDate by mutableStateOf(0L)
-    /** Loading at the END of the most recent calculation, not yet committed. */
-    private var resultTissue: String? = null
+    /**
+     * Loading at the END of the most recent calculation, not yet committed.
+     * Observable, because the "Dive done" button's visibility depends on it and
+     * a plain field would not recompose when Calculate or commitDive changed it.
+     */
+    private var resultTissue by mutableStateOf<String?>(null)
 
     init {
         // Must run after every property above is initialised: Kotlin executes
@@ -455,6 +459,12 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         baselineTissue = t
         baselineDate = System.currentTimeMillis()
         siActual = ""; si24 = false; si48 = false
+        // Consume it. Without this the button stayed live after committing, so
+        // "Dive done" sat on screen next to "Residual gas is carried" as though
+        // nothing had happened — and pressing it again re-stamped the SAME
+        // dive with a fresh timestamp, silently resetting the surface interval
+        // to zero while the plan on screen was unchanged.
+        resultTissue = null
         saveState()
     }
 
