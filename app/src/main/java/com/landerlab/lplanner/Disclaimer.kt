@@ -46,6 +46,9 @@ Always use your exact surface interval time or a shorter duration if you're unce
 
 Press Clear to declare yourself clean again.
 
+READING THE PLAN
+Press "Full screen" above the schedule for the plan on its own. The type size is computed to fit the width exactly, so turning the phone sideways makes it bigger, not just wider. A− and A+ override it, Fit returns to the computed size, Sun goes to full brightness for reading in sunlight. The screen is held awake the whole time. Tap once to hide the controls; Back closes it.
+
 LOG
 Every successful Calculate is recorded automatically, with the dive and settings that produced it. Swipe an entry to delete it, or press Clear.
 

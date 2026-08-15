@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,6 +92,16 @@ fun PlannerScreen(m: PlannerModel) {
     // to override it — the override just lasts until you change tabs again,
     // which is the point at which the default is right anyway.
     var chipsOpen by remember(tab) { mutableStateOf(tab == 0) }
+
+    // Survives rotation, which matters: turning the phone sideways is the whole
+    // reason to be in here, and dropping back to the tabbed view mid-turn would
+    // undo the thing you just did.
+    var planFull by rememberSaveable { mutableStateOf(false) }
+
+    if (planFull) {
+        PlanFullScreen(m) { planFull = false }
+        return
+    }
 
     Scaffold { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
@@ -143,7 +155,7 @@ fun PlannerScreen(m: PlannerModel) {
                     androidx.compose.material3.VerticalDivider()
                     Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)
-                    ) { PlanPane(m) }
+                    ) { PlanPane(m) { planFull = true } }
                 }
             } else {
                 TabRow(selectedTabIndex = tab) {
@@ -161,7 +173,7 @@ fun PlannerScreen(m: PlannerModel) {
                         .verticalScroll(rememberScrollState())
                         .padding(12.dp)
                 ) {
-                    if (tab == 0) CompactDiveColumn(m) else PlanPane(m)
+                    if (tab == 0) CompactDiveColumn(m) else PlanPane(m) { planFull = true }
                 }
             }
         }
@@ -503,8 +515,26 @@ private fun EntryField(label: String, value: String, onChange: (String) -> Unit)
 // ---- Plan output ----
 
 @Composable
-private fun PlanPane(m: PlannerModel) {
+private fun PlanPane(m: PlannerModel, onFullScreen: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (m.planText.isNotEmpty()) {
+            Row(
+                Modifier.fillMaxWidth().clickable(onClick = onFullScreen),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Full screen",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                Icon(
+                    Icons.Filled.Fullscreen,
+                    contentDescription = "Read the plan full screen",
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
         // The report is fixed-width ASCII (~58 columns). Letting it soft-wrap
         // breaks every row — the EAD column folds onto the next line and stops
         // lining up with its header. Scroll horizontally instead of wrapping.
