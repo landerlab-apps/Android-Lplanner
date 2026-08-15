@@ -160,15 +160,32 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                 }
             }
 
+            // Stop grid stands on its own. It used to live inside Deep stops,
+            // which hid it completely whenever gradient factors were on — yet
+            // every schedule is built on this grid, GF or not, Pyle or not, and
+            // a diver who wants 6 m increments on a rebreather has nothing to
+            // do with deep stops.
+            ConfigGroup(
+                "Stop depths",
+                "Stop distance is the interval between decompression stops — 3 m is the convention, " +
+                    "some rebreather divers prefer 6 m. Last stop is the depth of the final stop; " +
+                    "some prefer pulling the 10 ft / 3 m stop deeper. Both apply to every schedule, " +
+                    "whichever model, gradient factors or deep stops are in use.",
+            ) {
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
+                    LabeledField("Stop distance", m.stopDistance, Modifier.weight(1f)) { m.stopDistance = it }
+                    LabeledField("Last stop", m.lastStop, Modifier.weight(1f)) { m.lastStop = it }
+                }
+            }
+
             if (!(m.useGF && m.model != "vval")) {
                 ConfigGroup(
                     "Deep stops",
                     "Pyle deep stops insert short stops between the bottom and the first normal stop " +
                         "(mean-depth rule, re-run iteratively) to reduce microbubble formation and " +
                         "post-dive fatigue. Pyle stop time is the minutes spent at each generated stop " +
-                        "(1–5). Stop distance is the interval between normal stops; Last stop is the " +
-                        "depth of the final stop — some prefer pulling the 10 ft / 3 m stop deeper. " +
-                        "Not shown when gradient factors are enabled: GF Low takes over the deep-stop role.",
+                        "(1–5). Not shown when gradient factors are enabled: GF Low takes over the " +
+                        "deep-stop role.",
                 ) {
                     Seg(
                         listOf("None", "Pyle"),
@@ -185,10 +202,6 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                             TextButton(onClick = { if (m.pyleTime > 1) m.pyleTime-- }) { Text("−") }
                             TextButton(onClick = { if (m.pyleTime < 5) m.pyleTime++ }) { Text("+") }
                         }
-                    }
-                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
-                        LabeledField("Stop distance", m.stopDistance, Modifier.weight(1f)) { m.stopDistance = it }
-                        LabeledField("Last stop", m.lastStop, Modifier.weight(1f)) { m.lastStop = it }
                     }
                 }
             }
