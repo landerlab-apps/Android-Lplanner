@@ -322,7 +322,7 @@ private fun SurfaceIntervalRow(m: PlannerModel) {
             }
             if (m.canCommit) {
                 Text(
-                    "Dive done → carry gas forward",
+                    "Next dive",
                     style = MaterialTheme.typography.bodySmall,
                     textDecoration = TextDecoration.Underline,
                     modifier = Modifier.clickable { m.commitDive() },

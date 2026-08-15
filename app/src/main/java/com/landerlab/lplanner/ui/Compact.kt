@@ -171,7 +171,7 @@ fun CompactSetupChips(m: PlannerModel, expanded: Boolean, onToggle: () -> Unit) 
         }
         if (m.canCommit) {
             Row(Modifier.padding(top = 6.dp)) {
-                Chip("Dive done → carry gas forward") { m.commitDive() }
+                Chip("Next dive") { m.commitDive() }
             }
         }
     }

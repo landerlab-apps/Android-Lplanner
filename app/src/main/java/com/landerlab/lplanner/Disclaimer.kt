@@ -40,7 +40,7 @@ CONFIG
 Units, water, altitude, model, gradient factors, deep stops, ascent and descent rates, RMVs. Each section carries its own explanation.
 
 SURFACE INTERVAL AND RESIDUAL GAS
-After a dive press "Dive done" to carry your inert gas loading forward. It is kept when the app is closed and ages with real time. While gas is carried you must state a surface interval — 48 hr, 24 hr or Actual — before Calculate will work.
+When you surface, press "Next dive" to carry your inert gas loading forward into the dive you plan next. It is kept when the app is closed and ages with real time. While gas is carried you must state a surface interval — 48 hr, 24 hr or Actual — before Calculate will work.
 
 Always use your exact surface interval time or a shorter duration if you're uncertain about how long to wait between dives.
 
