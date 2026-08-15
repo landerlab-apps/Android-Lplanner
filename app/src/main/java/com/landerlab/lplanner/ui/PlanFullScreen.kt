@@ -100,7 +100,6 @@ fun PlanFullScreen(m: PlannerModel, onClose: () -> Unit) {
     }
 
     val text = m.planText.ifEmpty { "No plan yet — press Calculate." }
-    val longest = remember(text) { text.lines().maxByOrNull { it.length }.orEmpty() }
     val taps = remember { MutableInteractionSource() }
 
     Box(
@@ -113,35 +112,54 @@ fun PlanFullScreen(m: PlannerModel, onClose: () -> Unit) {
             val density = LocalDensity.current
             val measurer = rememberTextMeasurer()
 
-            // Lay the LONGEST LINE out at a reference size and scale from what
-            // it actually measured.
+            // Converge on the size by measuring at the size, rather than
+            // measuring once at a reference size and scaling.
             //
-            // Measuring one character and multiplying by the column count was
-            // wrong on the phone: the per-character advance rounds up to whole
-            // pixels, and 58 columns of that rounding put the EAD column off
-            // the right edge at a nominal 100% "fit". Measuring the real line
-            // has no such error, and costs one extra layout pass on a string
-            // that is already in the text cache.
-            val fitted = remember(longest, maxWidth, zoom) {
-                val reference = 50f
-                val linePx = measurer.measure(
-                    AnnotatedString(longest),
-                    TextStyle(fontFamily = FontFamily.Monospace, fontSize = reference.sp),
+            // Two earlier attempts predicted the width and both came out ~20%
+            // too large, which put the dashed rules and the EAD column off the
+            // right edge at a nominal 100% "fit". The prediction is what was
+            // wrong, not the arithmetic: sp is not a linear unit. Android 14
+            // scales text non-linearly when the reader has changed the system
+            // font size, compressing large sizes more than small ones, so a
+            // width measured at 50 sp simply does not divide down to a width at
+            // 11 sp. Font fallback for the ↓ ↑ — glyphs, which the monospace
+            // face may not carry, can skew it too.
+            //
+            // Measuring at the candidate size assumes none of that. Four passes
+            // settle it, and the loop below then guarantees the result actually
+            // fits rather than merely aiming to.
+            val fitted = remember(text, maxWidth) {
+                val style = TextStyle(fontFamily = FontFamily.Monospace)
+                val availablePx = with(density) { (maxWidth - 18.dp).toPx() }
+                fun widthAt(size: Float) = measurer.measure(
+                    AnnotatedString(text),
+                    style.copy(fontSize = size.sp),
                     softWrap = false,
                 ).size.width.toFloat()
-                val availablePx = with(density) { (maxWidth - 16.dp).toPx() }
-                val exact = if (linePx > 0f) reference * availablePx / linePx else 12f
-                // Floored at 7 sp: smaller than that is unreadable anyway, and
-                // the horizontal scroll below takes over.
-                (exact * zoom).coerceIn(7f, 48f)
+
+                var size = 14f
+                repeat(4) {
+                    val w = widthAt(size)
+                    if (w > 0f) size = (size * availablePx / w).coerceIn(7f, 48f)
+                }
+                // Belt and braces: shrink until it genuinely fits. A schedule
+                // that is 2% too wide loses its last column, which is the one
+                // failure this whole screen exists to prevent.
+                var guard = 0
+                while (guard++ < 10 && size > 7f && widthAt(size) > availablePx) {
+                    size = (size * 0.98f).coerceAtLeast(7f)
+                }
+                size
             }
+
+            val shown = (fitted * zoom).coerceIn(7f, 48f)
 
             Text(
                 text = text,
                 style = TextStyle(
                     fontFamily = FontFamily.Monospace,
-                    fontSize = fitted.sp,
-                    lineHeight = (fitted * 1.35f).sp,
+                    fontSize = shown.sp,
+                    lineHeight = (shown * 1.35f).sp,
                 ),
                 softWrap = false,
                 modifier = Modifier
