@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -204,8 +206,10 @@ private fun TopBar(
         BarButton("Log", Icons.AutoMirrored.Filled.MenuBook, onClick = onLog)
         // Dimmed and inert until a surface interval is stated, when residual
         // gas is being carried — same 40% treatment as Share and Print.
+        // "Calc" on the phone. The word is the widest thing in the bar and the
+        // button is unmistakable at either length.
         Text(
-            text = "Calculate",
+            text = "Calc",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -519,20 +523,61 @@ private fun PlanPane(m: PlannerModel, onFullScreen: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (m.planText.isNotEmpty()) {
             Row(
-                Modifier.fillMaxWidth().clickable(onClick = onFullScreen),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    "Full screen",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                Icon(
-                    Icons.Filled.Fullscreen,
-                    contentDescription = "Read the plan full screen",
-                    modifier = Modifier.size(22.dp),
-                )
+                // Keeping a plan is deliberate. The log used to take every
+                // calculation, so it filled with the throwaway runs it takes to
+                // settle on a dive and the ones worth keeping were lost among
+                // them. Nothing to do with "Next dive", which loads your
+                // tissues — this only files a schedule for later.
+                if (m.canSaveLog) {
+                    Row(
+                        Modifier
+                            .clickable { m.saveToLog() }
+                            .padding(end = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Filled.BookmarkBorder,
+                            contentDescription = "Keep this plan in the log",
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text("Keep", style = MaterialTheme.typography.bodySmall)
+                    }
+                } else {
+                    Row(
+                        Modifier.padding(end = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Filled.Bookmark,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            "Kept",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+                Row(
+                    Modifier.clickable(onClick = onFullScreen),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Full screen",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    Icon(
+                        Icons.Filled.Fullscreen,
+                        contentDescription = "Read the plan full screen",
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
         }
         // The report is fixed-width ASCII (~58 columns). Letting it soft-wrap

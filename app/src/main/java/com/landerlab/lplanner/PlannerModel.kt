@@ -380,7 +380,13 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             // since — and appended a duplicate every time the log was merely
             // viewed. Recording it here means an entry always matches the
             // settings that produced it.
-            appendLog()
+            // Prepared here, saved only if the diver asks for it. Building the
+            // entry at this moment is what keeps it honest: it captures the
+            // plan and the settings that produced it together. Logging on a
+            // later button press was the old bug — it saved whatever planText
+            // happened to hold by then, which was the PREVIOUS calculation if
+            // anything had been changed since.
+            pendingLog = LogEntry(summary = diveSummary, text = planText)
             saveState()
         } catch (e: ZPlanException) {
             Log.w(TAG, "calculate: engine refused the profile", e)
@@ -434,14 +440,33 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             return (listOf(dive, modelText) + extras).joinToString(" · ")
         }
 
-    private fun appendLog() {
-        if (planText.isEmpty()) return
+    /**
+     * The plan from the most recent Calculate, not yet in the log.
+     *
+     * The log used to take every calculation automatically, which filled it
+     * with the half-dozen throwaway runs it takes to settle on a dive. Keeping
+     * is now deliberate.
+     */
+    private var pendingLog by mutableStateOf<LogEntry?>(null)
+
+    /** A plan is on screen that has not been kept. */
+    val canSaveLog: Boolean get() = pendingLog != null
+
+    /**
+     * Keep the current plan. Distinct from commitDive(): this records a
+     * schedule for later reference and changes nothing, while "Next dive"
+     * loads your tissues and changes every plan that follows.
+     */
+    fun saveToLog() {
+        val entry = pendingLog ?: return
         // Compare against the whole log, not just the newest entry. Checking
         // only the first meant a plan you had deleted came straight back the
-        // next time you pressed Calculate on the same settings.
-        if (log.any { it.text == planText }) return
-        log.add(0, LogEntry(summary = diveSummary, text = planText))
-        store.save(log)
+        // next time you saved the same settings.
+        if (log.none { it.text == entry.text }) {
+            log.add(0, entry)
+            store.save(log)
+        }
+        pendingLog = null
     }
 
     fun removeLog(e: LogEntry) {

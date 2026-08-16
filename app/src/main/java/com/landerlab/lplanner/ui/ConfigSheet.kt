@@ -194,13 +194,24 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                     ) { m.deepStops = if (it == 1) "p" else "n" }
 
                     if (m.deepStops == "p") {
+                        // "Time", not "Pyle stop time": the group is already
+                        // called Deep stops and the only mode with a time is
+                        // Pyle, so the prefix bought nothing and cost the width
+                        // that pushed + off the right edge on a phone. The
+                        // steppers are plain boxes rather than TextButtons,
+                        // which carry ~16 dp of minimum padding each.
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Pyle stop time: ${m.pyleTime} min  (1–5)")
-                            TextButton(onClick = { if (m.pyleTime > 1) m.pyleTime-- }) { Text("−") }
-                            TextButton(onClick = { if (m.pyleTime < 5) m.pyleTime++ }) { Text("+") }
+                            Text(
+                                "Time: ${m.pyleTime} min  (1–5)",
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Stepper("−") { if (m.pyleTime > 1) m.pyleTime-- }
+                            Stepper("+") { if (m.pyleTime < 5) m.pyleTime++ }
                         }
                     }
                 }

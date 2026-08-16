@@ -33,8 +33,8 @@ android {
         applicationId = "com.landerlab.lplanner"
         minSdk = 26
         targetSdk = 36            // required for new Play submissions from 2026-08-31
-        versionCode = 8
-        versionName = "1.4.0"
+        versionCode = 9
+        versionName = "1.5.0"
 
         externalNativeBuild {
             cmake {

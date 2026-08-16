@@ -184,3 +184,22 @@ fun ConfigGroup(
 /** Dim disabled controls the way SwiftUI's `.opacity(0.4)` does. */
 fun Modifier.alphaIf(enabled: Boolean): Modifier =
     if (enabled) this else this.alpha(0.4f)
+
+/**
+ * Small square −/+ button. Material's TextButton reserves a 48 dp touch target
+ * plus its own horizontal padding, which is more than a single character needs
+ * and was enough to push the + off a 360 dp screen.
+ */
+@Composable
+fun Stepper(label: String, onClick: () -> Unit) {
+    Text(
+        label,
+        style = MaterialTheme.typography.titleMedium,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .size(34.dp)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
+            .clickable(onClick = onClick)
+            .padding(top = 3.dp),
+    )
+}
