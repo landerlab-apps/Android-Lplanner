@@ -372,7 +372,10 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             val r = ZPlan.plan(profileText, baselineTissue)
             Log.i(TAG, "calculate: engine returned ${r.reportText.length} chars")
             planText = r.reportText
-            notes = r.warnings
+            // NOT r.warnings. The engine already appends its warnings to the
+            // end of the report, so copying them here showed every one twice.
+            // The notes line is for the reasons there is NO plan.
+            notes = ""
             resultTissue = r.tissueFileText
             // Log at the moment of calculation. Logging used to happen when the
             // Log button was pressed, which saved whatever planText happened to
