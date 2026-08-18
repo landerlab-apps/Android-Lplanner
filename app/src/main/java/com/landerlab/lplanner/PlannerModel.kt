@@ -386,10 +386,17 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             // itself.
             val r = ZPlan.plan(profileText, baselineTissue)
             Log.i(TAG, "calculate: engine returned ${r.reportText.length} chars")
-            planText = r.reportText
-            // NOT r.warnings. The engine already appends its warnings to the
-            // end of the report, so copying them here showed every one twice.
-            // The notes line is for the reasons there is NO plan.
+            // Android only: the engine appends its warnings to the end of the
+            // report. On a phone that block can run to six or seven wrapped
+            // lines under a schedule that is already fighting for height, so it
+            // is stripped here and the standing warning lives in Info instead.
+            // zp_report() appends exactly "\n" + warnings, so removing that
+            // suffix is exact rather than a guess at where the table ends.
+            // iOS and macOS keep the warnings in the report.
+            planText = if (r.warnings.isNotEmpty())
+                r.reportText.removeSuffix("\n" + r.warnings).trimEnd() + "\n"
+            else r.reportText
+            // NOT r.warnings. The notes line is for the reasons there is NO plan.
             notes = ""
             resultTissue = r.tissueFileText
             // Log at the moment of calculation. Logging used to happen when the
