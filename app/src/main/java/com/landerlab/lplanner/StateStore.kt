@@ -32,6 +32,9 @@ class StateStore(context: Context) {
             s.saltWater = o.optBoolean("saltWater", s.saltWater)
             s.o2Narcotic = o.optBoolean("o2Narcotic", s.o2Narcotic)
             s.model = o.optString("model", s.model)
+            s.vpmConservatism = o.optInt("vpmConservatism", s.vpmConservatism)
+            s.vpmRadiusN2 = o.optString("vpmRadiusN2", s.vpmRadiusN2)
+            s.vpmRadiusHe = o.optString("vpmRadiusHe", s.vpmRadiusHe)
             s.useGF = o.optBoolean("useGF", s.useGF)
             s.gfLow = o.optString("gfLow", s.gfLow)
             s.gfHigh = o.optString("gfHigh", s.gfHigh)
@@ -105,6 +108,9 @@ class StateStore(context: Context) {
                 .put("depthsMetric", s.depthsMetric).put("rmvMetric", s.rmvMetric)
                 .put("saltWater", s.saltWater).put("o2Narcotic", s.o2Narcotic)
                 .put("model", s.model)
+                .put("vpmConservatism", s.vpmConservatism)
+                .put("vpmRadiusN2", s.vpmRadiusN2)
+                .put("vpmRadiusHe", s.vpmRadiusHe)
                 .put("useGF", s.useGF).put("gfLow", s.gfLow).put("gfHigh", s.gfHigh)
                 .put("altGfLow", s.altGfLow).put("altGfHigh", s.altGfHigh)
                 .put("extraSlow", s.extraSlow).put("ndlLow", s.ndlLow)
@@ -141,6 +147,9 @@ class PlannerState {
     var saltWater = true
     var o2Narcotic = false
     var model = "c"
+    var vpmConservatism = 0
+    var vpmRadiusN2 = "0.6"
+    var vpmRadiusHe = "0.5"
     var useGF = false
     var gfLow = "30"
     var gfHigh = "85"

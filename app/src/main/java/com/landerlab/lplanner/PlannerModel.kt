@@ -65,6 +65,8 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         depthsMetric = s.depthsMetric; rmvMetric = s.rmvMetric
         saltWater = s.saltWater; o2Narcotic = s.o2Narcotic
         model = s.model
+        vpmConservatism = s.vpmConservatism
+        vpmRadiusN2 = s.vpmRadiusN2; vpmRadiusHe = s.vpmRadiusHe
         useGF = s.useGF; gfLow = s.gfLow; gfHigh = s.gfHigh
         altGfLow = s.altGfLow; altGfHigh = s.altGfHigh
         extraSlow = s.extraSlow; ndlLow = s.ndlLow
@@ -89,6 +91,8 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         s.depthsMetric = depthsMetric; s.rmvMetric = rmvMetric
         s.saltWater = saltWater; s.o2Narcotic = o2Narcotic
         s.model = model
+        s.vpmConservatism = vpmConservatism
+        s.vpmRadiusN2 = vpmRadiusN2; s.vpmRadiusHe = vpmRadiusHe
         s.useGF = useGF; s.gfLow = gfLow; s.gfHigh = gfHigh
         s.altGfLow = altGfLow; s.altGfHigh = altGfHigh
         s.extraSlow = extraSlow; s.ndlLow = ndlLow
@@ -121,7 +125,10 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     var rmvMetric by mutableStateOf(true)           // RMVs: Cu.ft / Liters
     var saltWater by mutableStateOf(true)           // Water: Fresh / Salt
     var o2Narcotic by mutableStateOf(false)         // O2 Narcotic: No / Yes
-    var model by mutableStateOf("c")                // "c" (ZHL16-C) or "vval"
+    var model by mutableStateOf("c")                // "c" (ZHL16-C), "vval", or "vpm"
+    var vpmConservatism by mutableStateOf(0)        // 0-4
+    var vpmRadiusN2 by mutableStateOf("0.6")        // initial critical radius N2, microns
+    var vpmRadiusHe by mutableStateOf("0.5")        // initial critical radius He, microns
     var useGF by mutableStateOf(false)
     var gfLow by mutableStateOf("30")
     var gfHigh by mutableStateOf("85")
@@ -184,8 +191,11 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         stateStore.load()?.let { apply(it) }
     }
 
-    /** Gradient factors active — they override Conservatism. */
-    val gfOn: Boolean get() = (useGF || useAltGF) && model != "vval"
+    /** Gradient factors active — they override Conservatism. ZHL-16C only. */
+    val gfOn: Boolean get() = (useGF || useAltGF) && model == "c"
+
+    /** True when the Conservatism % slider is live (ZHL-16C, no GF). */
+    val consOn: Boolean get() = model == "c" && !gfOn
 
     /** True when residual loading from an earlier dive is being carried. */
     val hasResidual: Boolean get() = baselineTissue != null
@@ -235,7 +245,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
                 "UseMetric: ${yn(depthsMetric)}",
                 "RmvMetric: ${yn(rmvMetric)}",
                 "SaltWater: ${yn(saltWater)}",
-                "Model: ${if (model == "vval") "vval18" else "zhl16c"}",
+                "Model: ${when (model) { "vval" -> "vval18"; "vpm" -> "vpm"; else -> "zhl16c" }}",
                 "Altitude: ${one(altitude)}",
                 "Conservatism: ${conservatism.toInt()}",
                 "Precision: 1",
@@ -256,7 +266,12 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
                 "ExtStopShallow: $extStopShallow",
                 "ExtStopDeep: $extStopDeep",
             ).joinTo(p, "\n")
-            if ((useGF || useAltGF) && model != "vval") {
+            if (model == "vpm") {
+                p.append("\nVpmConservatism: $vpmConservatism")
+                p.append("\nVpmRadiusN2: ${one(vpmRadiusN2)}")
+                p.append("\nVpmRadiusHe: ${one(vpmRadiusHe)}")
+            }
+            if (model == "c" && (useGF || useAltGF)) {
                 val lo = if (useAltGF) altGfLow else gfLow
                 val hi = if (useAltGF) altGfHigh else gfHigh
                 p.append("\nGradientFactors: $lo, $hi")
@@ -419,13 +434,17 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
 
             // Named modelText, not model: a local called `model` would shadow the
             // property of the same name and read very confusingly.
-            val modelText = if (model == "vval") "VVAL-18" else buildString {
-                append("ZHL16-C")
-                if (gfOn) {
-                    val lo = if (useAltGF) altGfLow else gfLow
-                    val hi = if (useAltGF) altGfHigh else gfHigh
-                    append(" GF$lo/$hi")
-                } else append(" cons ${conservatism.toInt()}%")
+            val modelText = when (model) {
+                "vval" -> "VVAL-18"
+                "vpm"  -> "VPM-B +$vpmConservatism"
+                else   -> buildString {
+                    append("ZHL16-C")
+                    if (gfOn) {
+                        val lo = if (useAltGF) altGfLow else gfLow
+                        val hi = if (useAltGF) altGfHigh else gfHigh
+                        append(" GF$lo/$hi")
+                    } else append(" cons ${conservatism.toInt()}%")
+                }
             }
 
             val extras = buildList {

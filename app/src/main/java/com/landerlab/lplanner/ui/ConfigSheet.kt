@@ -81,18 +81,19 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
 
             ConfigGroup(
                 "Model",
-                "ZHL16-C is the Buhlmann set used here. VVAL-18 is the U.S. Navy Thalmann EL-DCM " +
+                "ZHL16-C is the Bühlmann set used here. VVAL-18 is the U.S. Navy Thalmann EL-DCM " +
                     "(exponential uptake, linear elimination); gradient factors and Conservatism do not " +
-                    "apply to it. With gradient factors enabled, Pyle deep stops are disabled — GF Low " +
-                    "provides the deep-stop function — and Conservatism is ignored.",
+                    "apply to it. VPM-B (Yount/Hoffman/Baker) tracks bubble nuclei rather than dissolved " +
+                    "gas tension — it tends to place the first stop deep, with shorter shallow stops. " +
+                    "Gradient factors and Conservatism apply to ZHL16-C only.",
             ) {
                 Seg(
-                    listOf("ZHL16-C", "VVAL-18"),
-                    if (m.model == "vval") 1 else 0,
+                    listOf("ZHL16-C", "VVAL-18", "VPM-B"),
+                    when (m.model) { "vval" -> 1; "vpm" -> 2; else -> 0 },
                     modifier = Modifier.fillMaxWidth(),
-                ) { m.model = if (it == 1) "vval" else "c" }
+                ) { m.model = when (it) { 1 -> "vval"; 2 -> "vpm"; else -> "c" } }
 
-                if (m.model != "vval") {
+                if (m.model == "c") {
                     Check("Gradient factors", m.useGF) { m.useGF = it }
                     Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
                         LabeledField("GF Low", m.gfLow, Modifier.weight(1f), enabled = m.useGF) { m.gfLow = it }
@@ -101,7 +102,34 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                 }
             }
 
-            if (m.model != "vval") {
+            if (m.model == "vpm") {
+                ConfigGroup(
+                    "VPM-B",
+                    "Conservatism adds extra gas volume allowance on top of Baker's nominal schedule: " +
+                        "0 is the published reference, 4 is the most conservative. Critical radii are the " +
+                        "initial nucleus sizes in microns (N2 0.6, He 0.5 by default). Leave the radii " +
+                        "alone — changing them moves you outside the validated envelope.",
+                ) {
+                    Column {
+                        Text(
+                            "Conservatism: ${m.vpmConservatism}  (0–4)",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        )
+                        Slider(
+                            value = m.vpmConservatism.toFloat(),
+                            onValueChange = { m.vpmConservatism = it.roundToInt() },
+                            valueRange = 0f..4f,
+                            steps = 3,
+                        )
+                    }
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
+                        LabeledField("Radius N2 (µm)", m.vpmRadiusN2, Modifier.weight(1f)) { m.vpmRadiusN2 = it }
+                        LabeledField("Radius He (µm)", m.vpmRadiusHe, Modifier.weight(1f)) { m.vpmRadiusHe = it }
+                    }
+                }
+            }
+
+            if (m.model == "c") {
                 ConfigGroup(
                     "Alternative gradient factors",
                     "A second GF pair, used instead of the main pair whenever altGF is checked on the " +
@@ -144,10 +172,13 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                     "percentage), as if a previous dive had been made. Zero is the clean-diver profile.",
             ) {
                 LabeledField("Altitude", m.altitude) { m.altitude = it }
-                Column(Modifier.alphaIf(!m.gfOn)) {
+                Column(Modifier.alphaIf(m.consOn)) {
                     Text(
-                        if (m.gfOn) "Conservatism — not used with gradient factors"
-                        else "Conservatism: ${m.conservatism.toInt()} %  (0–50 maximum)",
+                        when {
+                            m.gfOn        -> "Conservatism — not used with gradient factors"
+                            m.model != "c" -> "Conservatism — ZHL16-C only"
+                            else           -> "Conservatism: ${m.conservatism.toInt()} %  (0–50 maximum)"
+                        },
                         style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
                     )
                     Slider(
@@ -155,7 +186,7 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                         onValueChange = { m.conservatism = it.roundToInt().toDouble() },
                         valueRange = 0f..50f,
                         steps = 49,
-                        enabled = !m.gfOn,
+                        enabled = m.consOn,
                     )
                 }
             }
@@ -178,7 +209,7 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
                 }
             }
 
-            if (!(m.useGF && m.model != "vval")) {
+            if (!(m.useGF && m.model == "c")) {
                 ConfigGroup(
                     "Deep stops",
                     "Pyle deep stops insert short stops between the bottom and the first normal stop " +
