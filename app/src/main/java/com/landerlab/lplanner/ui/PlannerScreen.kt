@@ -50,8 +50,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -81,8 +82,17 @@ fun PlannerScreen(m: PlannerModel) {
     // and so passed a width-only test, landing on the tablet layout — three
     // full-width setup rows plus the top bar left barely 100 dp for the plan,
     // which is why landscape was unusable. A real tablet is wide AND tall.
-    val cfg = LocalConfiguration.current
-    val wide = cfg.screenWidthDp >= 600 && cfg.screenHeightDp >= 480
+    // Measured from the WINDOW, not the screen. Configuration.screenWidthDp
+    // reports the display; on a foldable, in split screen, or in a freeform
+    // desktop window the app may own a fraction of it, and the layout would
+    // switch on the size of a rectangle the app does not have. Compose flags
+    // the old call for exactly this reason. containerSize is in pixels, so it
+    // goes through the density to reach dp.
+    val container = LocalWindowInfo.current.containerSize
+    val density = LocalDensity.current
+    val wide = with(density) {
+        container.width.toDp() >= 600.dp && container.height.toDp() >= 480.dp
+    }
 
     // Hoisted out of the narrow branch: pressing Calculate has to be able to
     // bring the Plan tab forward. On a phone the plan and every error message
