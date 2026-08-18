@@ -59,13 +59,31 @@ Both become available once a plan has been calculated.
 WARNINGS
 To keep the schedule readable on a phone, warnings are not printed under the table. Read them here and apply them yourself — the planner will not stop you.
 
-Gas density. Above 5.2 g/L a bottom mix is denser than ideal; above 6.2 g/L it exceeds the limit given by Anthony & Mitchell, where work of breathing and CO2 retention rise steeply. CO2 retention is itself a risk factor for oxygen toxicity and narcosis. Add helium. For reference, 18/45 at 70 m is 6.4 g/L and 18/50 brings it to 5.9.
+GAS DENSITY
+Above 5.2 g/L a bottom mix is denser than ideal; above 6.2 g/L it exceeds the limit given by Anthony & Mitchell, where work of breathing and CO2 retention rise steeply. CO2 retention is itself a risk factor for oxygen toxicity and narcosis. Add helium. For reference, 18/45 at 70 m is 6.4 g/L and 18/50 brings it to 5.9.
 
-Isobaric counterdiffusion. Switching from a high-helium mix to a high-nitrogen one can raise the total inert load even as you ascend. Keep the nitrogen increase modest on a switch, and do not jump from trimix straight to air or nitrox at depth.
+LAST STOP AT 6 M
+A 6 m last stop works only on 100% oxygen, which delivers zero inspired inert gas at any depth. On air, 32%, 50% or anything else the inspired inert pressure must keep falling to drive off-gassing, so finish the stepped ascent — 4.5 m, 3 m — rather than hanging at 6 m. Check that Config, Last stop matches the gas you will actually be breathing there.
 
-VVAL-18 on trimix. The U.S. Navy publishes no helium parameters for this model; the helium handling here is this project's own unvalidated extrapolation, and it begins decompression far shallower on helium than a bubble model does. Use VPM-B, or ZHL16-C with gradient factors, for trimix.
+ASCENT RATE
+Dive the rate you planned. Time spent deep on the way up is more gas loading, not less, and a schedule computed at 10 m/min is wrong if you ascend at 5 — which is what most technical divers actually do. Either plan the slower rate or hold to the planned one.
 
-Oxygen exposure. CNS % and OTUs are printed with every plan. They are not warnings and nothing enforces them — 100 % CNS is a limit, not a target.
+The slow final ascent from the last stop is the exception. The planner ignores it, so taking it slowly is extra decompression rather than missing decompression, and it is fine to do.
 
-None of this replaces the disclaimer above. Validate every schedule against independent tables or software before diving it."""
+ISOBARIC COUNTERDIFFUSION
+Changing the inspired He:N2 ratio sharply off-gasses one inert gas while on-gassing the other. Switching from trimix to EAN50 raises inspired nitrogen to roughly what it was several stops deeper, halting nitrogen off-gassing while helium leaves quickly. That is the accepted trade rather than a fault, but do not compound it with a large nitrogen jump at depth. Note also that ICD names a process, not a single injury: the inner-ear form is a distinct problem with its own literature.
+
+TRIMIX DECO GAS
+A 50/50 or 50/25 deco mix removes more nitrogen earlier. It does not remove helium faster — breathing helium slows helium off-gassing, and you carry more of it to the switch onto oxygen. A longer schedule on a trimix deco gas is the model working, not a bug.
+
+EXTENDED STOPS
+Useful at a gas switch, where the new mix has raised the off-gas gradient. Do not extend in the deepest part of the ascent: ambient pressure is still high there and the extra time loads you.
+
+VVAL-18 ON TRIMIX
+The U.S. Navy publishes no helium parameters for this model; the helium handling here is this project's own unvalidated extrapolation, and it begins decompression far shallower on helium than a bubble model does. Use VPM-B, or ZHL16-C with gradient factors, for trimix.
+
+OXYGEN EXPOSURE
+CNS % and OTUs are printed with every plan. Nothing enforces them — 100% CNS is a limit, not a target.
+
+Most of the above follows Ross Hemingway's "Some common practices, myths and mistakes on decompression" at decompression.org. None of it replaces the disclaimer above. Validate every schedule against independent tables or software before diving it."""
 }
