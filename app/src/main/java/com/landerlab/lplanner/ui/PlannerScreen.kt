@@ -59,6 +59,7 @@ import com.landerlab.lplanner.Disclaimer
 import com.landerlab.lplanner.DiveLevel
 import com.landerlab.lplanner.Manual
 import com.landerlab.lplanner.PlannerModel
+import com.landerlab.lplanner.Printing
 import com.landerlab.lplanner.ZPlan
 
 /**
