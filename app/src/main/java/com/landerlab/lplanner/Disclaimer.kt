@@ -54,7 +54,9 @@ LOG
 Press Keep above the schedule to file a plan you want. It is stored with the dive and settings that produced it. Nothing is logged unless you ask — the log used to take every calculation and filled with throwaway runs. Keep has nothing to do with "Next dive": it records a schedule, it does not load your tissues. Swipe an entry to delete it, or press Clear.
 
 SHARE AND PRINT
-Both become available once a plan has been calculated.
+The three buttons on the right of the top bar are Share, Print and Info. They carry no captions — the icons are unmistakable and the words cost the width that Print needs to fit on a phone. Share and Print stay in place at all times and dim while there is no plan to send, so the bar never changes shape under your thumb.
+
+Print opens the system print dialogue, from where the schedule can go to a printer or be saved as a PDF. It prints in the same monospace type you see on screen, because the columns only line up when every character is the same width.
 
 WARNINGS
 To keep the schedule readable on a phone, warnings are not printed under the table. Read them here and apply them yourself — the planner will not stop you.

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Info
@@ -219,18 +220,27 @@ private fun TopBar(
                 .padding(horizontal = 18.dp, vertical = 7.dp),
         )
         Box(Modifier.weight(1f))
-        // Share and Info are permanent. Share used to be hidden until a plan
-        // existed, so the bar changed shape after the first Calculate; it now
-        // stays put and dims while there is nothing to share.
+        // Share, Print and Info are permanent and carry no caption. The three
+        // words cost more width than the icons they labelled, and on a 360 dp
+        // screen that was the difference between Print fitting and not. All
+        // three keep their contentDescription, so a screen reader still names
+        // them and nothing is lost to anyone who needs the word.
+        //
+        // Share and Print dim to 40% while there is nothing to send rather
+        // than disappearing: a bar that changes shape after the first
+        // Calculate makes the buttons hard to find twice.
         val noPlan = m.planText.isEmpty()
-        BarButton("Share", Icons.Filled.Share, enabled = !noPlan) {
+        BarButton("Share", Icons.Filled.Share, enabled = !noPlan, showLabel = false) {
             val send = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, m.planText)
             }
             context.startActivity(Intent.createChooser(send, "Share dive plan"))
         }
-        BarButton("Info", Icons.Outlined.Info, onClick = onInfo)
+        BarButton("Print", Icons.Filled.Print, enabled = !noPlan, showLabel = false) {
+            Printing.printPlan(context, m.planText)
+        }
+        BarButton("Info", Icons.Outlined.Info, showLabel = false, onClick = onInfo)
     }
 }
 
@@ -263,11 +273,19 @@ private fun InfoDialog(onDismiss: () -> Unit) {
     )
 }
 
+/**
+ * Bar button. [showLabel] false leaves the icon alone in the box — used for
+ * Share, Print and Info, where the picture is unambiguous and the caption was
+ * only costing width. The vertical padding grows to compensate so an icon-only
+ * button stays the same height as a captioned one and the bar keeps one
+ * baseline; without it Config and Log stood a row taller than the rest.
+ */
 @Composable
 private fun BarButton(
     title: String,
     icon: ImageVector,
     enabled: Boolean = true,
+    showLabel: Boolean = true,
     onClick: () -> Unit,
 ) {
     Column(
@@ -277,10 +295,10 @@ private fun BarButton(
             .alphaIf(enabled)
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = if (showLabel) 4.dp else 11.dp),
     ) {
         Icon(icon, contentDescription = title, modifier = Modifier.size(20.dp))
-        Text(title, style = MaterialTheme.typography.labelSmall)
+        if (showLabel) Text(title, style = MaterialTheme.typography.labelSmall)
     }
 }
 
