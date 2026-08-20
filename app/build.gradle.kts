@@ -72,6 +72,31 @@ android {
         debug { isMinifyEnabled = false }
     }
 
+    // Two stores, one codebase. The app itself is identical in both: the only
+    // differences are the application id and the string shown in Info, so a
+    // bug fixed here is fixed for everyone. A second source folder would have
+    // meant two copies of the UI and a guarantee of drift - which is exactly
+    // how the abandoned monorepo copy came about.
+    //
+    // The ids differ deliberately. Google Play signs release artefacts with a
+    // key it holds; F-Droid signs with its own. Two certificates under one
+    // application id means Android refuses to install either build over the
+    // other, and the diver would have to uninstall - losing his plan log and
+    // his carried tissue loading - to move between them. A suffix costs an
+    // ugly package name and buys side-by-side installation instead.
+    flavorDimensions += "store"
+    productFlavors {
+        create("play") {
+            dimension = "store"
+            // No suffix: this is the id already reserved on Play.
+        }
+        create("fdroid") {
+            dimension = "store"
+            applicationIdSuffix = ".fdroid"
+            versionNameSuffix = "-fdroid"
+        }
+    }
+
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
