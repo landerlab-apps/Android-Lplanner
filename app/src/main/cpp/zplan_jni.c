@@ -4,7 +4,8 @@
  * JNI bridge to the ZPlanKit C engine (czplan.c), mirroring the Swift API in
  * ZPlanKit/Sources/ZPlanKit/ZPlanKit.swift exactly:
  *
- *   profile.dat text (+ optional tissue.dat text)  ->  report, warnings, tissue
+ *   profile.dat text (+ optional tissue.dat text)
+ *     ->  report, warnings, tissue, refused
  *
  * The whole engine is driven through the profile text, so nothing of zp_config
  * has to be marshalled field by field. Keeping the boundary this narrow is what
@@ -23,6 +24,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "czplan.h"
+#include "zp_altitude.h"
 
 #define REPORT_BUF   32768
 #define TISSUE_BUF   2048
@@ -87,13 +89,19 @@ static void write_tissues(const zp_result *r, char *buf, size_t buflen)
         n += snprintf(buf + n, buflen - n, "%f\n", r->end_phe[i] / kAtm);
 }
 
+/* The fifth element is the refusal flag. Without it the Kotlin side cannot
+ * tell "here is a plan, with advisories" from "there is no plan, and this is
+ * why", and it strips the warnings in both cases - which on a refusal leaves
+ * the diver looking at NO PLAN COMPUTED and no reason. */
 static jobjectArray make_result(JNIEnv *env, const char *err, const char *report,
-                                const char *warnings, const char *tissue)
+                                const char *warnings, const char *tissue,
+                                int refused)
 {
     jclass cls = (*env)->FindClass(env, "java/lang/String");
-    jobjectArray out = (*env)->NewObjectArray(env, 4, cls, NULL);
-    const char *vals[4] = { err, report, warnings, tissue };
-    for (int i = 0; i < 4; i++) {
+    jobjectArray out = (*env)->NewObjectArray(env, 5, cls, NULL);
+    const char *vals[5] = { err, report, warnings, tissue,
+                            refused ? "1" : "0" };
+    for (int i = 0; i < 5; i++) {
         if (!vals[i]) continue;
         jstring s = (*env)->NewStringUTF(env, vals[i]);
         (*env)->SetObjectArrayElement(env, out, i, s);
@@ -103,7 +111,8 @@ static jobjectArray make_result(JNIEnv *env, const char *err, const char *report
 }
 
 /*
- * Returns String[4]: { error-or-null, report, warnings, tissueFile }.
+ * Returns String[5]: { error-or-null, report, warnings, tissueFile,
+ * "1" or "0" for refused }.
  * When element 0 is non-null the run failed and the rest are null.
  */
 JNIEXPORT jobjectArray JNICALL
@@ -121,13 +130,13 @@ Java_com_landerlab_lplanner_ZPlan_nativePlan(JNIEnv *env, jobject thiz,
     err[0] = '\0';
 
     if (!cfg || !res || !report || !tissue) {
-        ret = make_result(env, "Out of memory", NULL, NULL, NULL);
+        ret = make_result(env, "Out of memory", NULL, NULL, NULL, 0);
         goto done;
     }
 
     const char *profile = (*env)->GetStringUTFChars(env, jProfile, NULL);
     if (!profile) {
-        ret = make_result(env, "Could not read profile text", NULL, NULL, NULL);
+        ret = make_result(env, "Could not read profile text", NULL, NULL, NULL, 0);
         goto done;
     }
 
@@ -138,7 +147,7 @@ Java_com_landerlab_lplanner_ZPlan_nativePlan(JNIEnv *env, jobject thiz,
     if (rc != 0) {
         char msg[ERR_BUF + 32];
         snprintf(msg, sizeof(msg), "Profile parse error: %s", err);
-        ret = make_result(env, msg, NULL, NULL, NULL);
+        ret = make_result(env, msg, NULL, NULL, NULL, 0);
         goto done;
     }
 
@@ -151,14 +160,16 @@ Java_com_landerlab_lplanner_ZPlan_nativePlan(JNIEnv *env, jobject thiz,
     }
 
     if (zp_plan(cfg, res) != 0) {
-        ret = make_result(env, "Decompression planning failed", NULL, NULL, NULL);
+        ret = make_result(env, "Decompression planning failed", NULL, NULL,
+                          NULL, 0);
         goto done;
     }
 
     zp_report(cfg, res, report, REPORT_BUF);
     write_tissues(res, tissue, TISSUE_BUF);
 
-    ret = make_result(env, NULL, report, res->warnings, tissue);
+    ret = make_result(env, NULL, report, res->warnings, tissue,
+                      res->refused ? 1 : 0);
 
 done:
     free(cfg); free(res); free(report); free(tissue);
@@ -170,4 +181,77 @@ Java_com_landerlab_lplanner_ZPlan_nativeVersion(JNIEnv *env, jobject thiz)
 {
     (void)thiz;
     return (*env)->NewStringUTF(env, zp_version());
+}
+
+static int prepare(JNIEnv *env, jstring jProfile, jstring jTissue,
+                   zp_config *cfg, zp_result *res)
+{
+    char err[ERR_BUF];
+    const char *profile = (*env)->GetStringUTFChars(env, jProfile, NULL);
+    if (!profile) return -1;
+    zp_config_init(cfg);
+    int rc = zp_parse_profile(profile, cfg, err, sizeof(err));
+    (*env)->ReleaseStringUTFChars(env, jProfile, profile);
+    if (rc != 0) return -1;
+    if (jTissue) {
+        const char *t = (*env)->GetStringUTFChars(env, jTissue, NULL);
+        if (t) {
+            load_tissues(t, cfg);
+            (*env)->ReleaseStringUTFChars(env, jTissue, t);
+        }
+    }
+    return zp_plan(cfg, res) != 0 ? -1 : 0;
+}
+
+static int read_array(JNIEnv *env, jdoubleArray a, double *out, int n)
+{
+    if (!a || (*env)->GetArrayLength(env, a) != n) return 0;
+    (*env)->GetDoubleArrayRegion(env, a, 0, n, out);
+    return 1;
+}
+
+static jdoubleArray make_array(JNIEnv *env, const double *v, int n)
+{
+    jdoubleArray a = (*env)->NewDoubleArray(env, n);
+    if (a) (*env)->SetDoubleArrayRegion(env, a, 0, n, v);
+    return a;
+}
+
+JNIEXPORT jdoubleArray JNICALL
+Java_com_landerlab_lplanner_ZPlan_nativeInterconnected(JNIEnv *env, jobject thiz,
+                                                       jstring jProfile, jstring jTissue,
+                                                       jdoubleArray jPrev, jdouble si)
+{
+    (void)thiz;
+    jdoubleArray ret = NULL;
+    zp_config *cfg = calloc(1, sizeof(zp_config));
+    zp_result *res = calloc(1, sizeof(zp_result));
+    if (cfg && res && prepare(env, jProfile, jTissue, cfg, res) == 0) {
+        double prev[ZPA_ICM_N], out[ZPA_ICM_N];
+        int have = read_array(env, jPrev, prev, ZPA_ICM_N);
+        zp_icm_after_dive(cfg, res, have ? prev : NULL, si, out);
+        ret = make_array(env, out, ZPA_ICM_N);
+    }
+    free(cfg); free(res);
+    return ret;
+}
+
+JNIEXPORT jdoubleArray JNICALL
+Java_com_landerlab_lplanner_ZPlan_nativeAltitude(JNIEnv *env, jobject thiz,
+                                                 jstring jProfile, jstring jTissue,
+                                                 jdoubleArray jState, jdoubleArray jReq)
+{
+    (void)thiz;
+    jdoubleArray ret = NULL;
+    double req[ZPA_REQ_N], state[ZPA_ICM_N], ans[ZPA_ANS_N];
+    if (!read_array(env, jReq, req, ZPA_REQ_N)) return NULL;
+    int have = read_array(env, jState, state, ZPA_ICM_N);
+    zp_config *cfg = calloc(1, sizeof(zp_config));
+    zp_result *res = calloc(1, sizeof(zp_result));
+    if (cfg && res && prepare(env, jProfile, jTissue, cfg, res) == 0) {
+        zp_altitude(cfg, res, have ? state : NULL, req, ans);
+        ret = make_array(env, ans, ZPA_ANS_N);
+    }
+    free(cfg); free(res);
+    return ret;
 }

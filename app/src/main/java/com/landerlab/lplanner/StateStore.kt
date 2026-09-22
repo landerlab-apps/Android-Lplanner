@@ -29,6 +29,10 @@ class StateStore(context: Context) {
             val s = PlannerState()
             s.depthsMetric = o.optBoolean("depthsMetric", s.depthsMetric)
             s.rmvMetric = o.optBoolean("rmvMetric", s.rmvMetric)
+            // Absent in states written before v1.22: infer an override from the
+            // saved pair, so a diver who had deliberately mixed units keeps them.
+            s.rmvMetricOverride =
+                o.optBoolean("rmvMetricOverride", s.rmvMetric != s.depthsMetric)
             s.saltWater = o.optBoolean("saltWater", s.saltWater)
             s.o2Narcotic = o.optBoolean("o2Narcotic", s.o2Narcotic)
             s.model = o.optString("model", s.model)
@@ -40,7 +44,6 @@ class StateStore(context: Context) {
             s.gfHigh = o.optString("gfHigh", s.gfHigh)
             s.altGfLow = o.optString("altGfLow", s.altGfLow)
             s.altGfHigh = o.optString("altGfHigh", s.altGfHigh)
-            s.extraSlow = o.optBoolean("extraSlow", s.extraSlow)
             s.ndlLow = o.optBoolean("ndlLow", s.ndlLow)
             s.altitude = o.optString("altitude", s.altitude)
             s.altitudeEquilibrated = o.optBoolean("altitudeEquilibrated", s.altitudeEquilibrated)
@@ -60,6 +63,11 @@ class StateStore(context: Context) {
             s.decoRMV = o.optString("decoRMV", s.decoRMV)
             s.extStopShallow = o.optInt("extStopShallow", s.extStopShallow)
             s.extStopDeep = o.optInt("extStopDeep", s.extStopDeep)
+            s.airBreaksOn = o.optBoolean("airBreaksOn", s.airBreaksOn)
+            s.airBreakMode = o.optString("airBreakMode", s.airBreakMode)
+            s.breakAfter = o.optString("breakAfter", s.breakAfter)
+            s.breakFor = o.optString("breakFor", s.breakFor)
+            s.breakGas = o.optString("breakGas", s.breakGas)
             s.si48 = o.optBoolean("si48", s.si48)
             s.si24 = o.optBoolean("si24", s.si24)
             s.siActual = o.optString("siActual", s.siActual)
@@ -68,9 +76,15 @@ class StateStore(context: Context) {
             s.circuitClosed = o.optBoolean("circuitClosed", s.circuitClosed)
             s.plus3m = o.optBoolean("plus3m", s.plus3m)
             s.plus5min = o.optBoolean("plus5min", s.plus5min)
+            s.travelGas = o.optBoolean("travelGas", s.travelGas)
             s.useAltGF = o.optBoolean("useAltGF", s.useAltGF)
             s.baselineTissue = if (o.isNull("baselineTissue")) null else o.optString("baselineTissue")
             s.baselineDate = o.optLong("baselineDate", 0L)
+            s.icmBaseline = o.optJSONArray("icmBaseline")?.let { a ->
+                DoubleArray(a.length()) { a.optDouble(it) }
+            }
+            s.altitudeTrip = AltitudeTrip.from(o.optJSONObject("altitudeTrip"))
+            s.altitudeSettings = AltitudeSettings.from(o.optJSONObject("altitudeSettings"))
 
             val arr = o.optJSONArray("levels") ?: JSONArray()
             s.levels = buildList {
@@ -108,6 +122,7 @@ class StateStore(context: Context) {
             }
             val o = JSONObject()
                 .put("depthsMetric", s.depthsMetric).put("rmvMetric", s.rmvMetric)
+                .put("rmvMetricOverride", s.rmvMetricOverride)
                 .put("saltWater", s.saltWater).put("o2Narcotic", s.o2Narcotic)
                 .put("model", s.model)
                 .put("vpmConservatism", s.vpmConservatism)
@@ -115,7 +130,7 @@ class StateStore(context: Context) {
                 .put("vpmRadiusHe", s.vpmRadiusHe)
                 .put("useGF", s.useGF).put("gfLow", s.gfLow).put("gfHigh", s.gfHigh)
                 .put("altGfLow", s.altGfLow).put("altGfHigh", s.altGfHigh)
-                .put("extraSlow", s.extraSlow).put("ndlLow", s.ndlLow)
+                .put("ndlLow", s.ndlLow)
                 .put("altitude", s.altitude).put("conservatism", s.conservatism)
                 .put("altitudeEquilibrated", s.altitudeEquilibrated)
                 .put("hoursAtAltitude", s.hoursAtAltitude)
@@ -126,14 +141,22 @@ class StateStore(context: Context) {
                 .put("maxPO2", s.maxPO2).put("maxEND", s.maxEND)
                 .put("bottomRMV", s.bottomRMV).put("decoRMV", s.decoRMV)
                 .put("extStopShallow", s.extStopShallow).put("extStopDeep", s.extStopDeep)
+                .put("airBreaksOn", s.airBreaksOn).put("airBreakMode", s.airBreakMode)
+                .put("breakAfter", s.breakAfter).put("breakFor", s.breakFor)
+                .put("breakGas", s.breakGas)
                 .put("si48", s.si48).put("si24", s.si24).put("siActual", s.siActual)
                 .put("decoGasesOn", s.decoGasesOn).put("decoGases", s.decoGases)
                 .put("circuitClosed", s.circuitClosed)
                 .put("plus3m", s.plus3m).put("plus5min", s.plus5min)
+                .put("travelGas", s.travelGas)
                 .put("useAltGF", s.useAltGF)
                 .put("levels", levels)
                 .put("baselineTissue", s.baselineTissue ?: JSONObject.NULL)
                 .put("baselineDate", s.baselineDate)
+                .put("icmBaseline", s.icmBaseline?.let { v -> JSONArray().apply { v.forEach { put(it) } } }
+                    ?: JSONObject.NULL)
+                .put("altitudeTrip", s.altitudeTrip.toJson())
+                .put("altitudeSettings", s.altitudeSettings.toJson())
 
             val tmp = File(file.parentFile, "state.json.tmp")
             tmp.writeText(o.toString(2))
@@ -148,6 +171,7 @@ class StateStore(context: Context) {
 class PlannerState {
     var depthsMetric = true
     var rmvMetric = true
+    var rmvMetricOverride = false
     var saltWater = true
     var o2Narcotic = false
     var model = "c"
@@ -159,7 +183,6 @@ class PlannerState {
     var gfHigh = "85"
     var altGfLow = "90"
     var altGfHigh = "90"
-    var extraSlow = false
     var ndlLow = false
     var altitude = "0"
     var altitudeEquilibrated = false
@@ -180,6 +203,12 @@ class PlannerState {
     /** Extra hold on a deco mix switch, per depth band, 0-10 min. */
     var extStopShallow = 0
     var extStopDeep = 0
+    /** Air breaks: off, or "navy" / "subsurface". */
+    var airBreaksOn = false
+    var airBreakMode = "navy"
+    var breakAfter = "30"
+    var breakFor = "5"
+    var breakGas = ""
     var si48 = false
     var si24 = false
     var siActual = ""
@@ -188,6 +217,7 @@ class PlannerState {
     var circuitClosed = false
     var plus3m = false
     var plus5min = false
+    var travelGas = false
     var useAltGF = false
     var levels: List<DiveLevel> = emptyList()
 
@@ -199,4 +229,7 @@ class PlannerState {
      */
     var baselineTissue: String? = null
     var baselineDate: Long = 0L
+    var icmBaseline: DoubleArray? = null
+    var altitudeTrip = AltitudeTrip()
+    var altitudeSettings = AltitudeSettings()
 }

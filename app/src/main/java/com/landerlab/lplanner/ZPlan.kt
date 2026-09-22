@@ -9,8 +9,9 @@ package com.landerlab.lplanner
  *
  * ┌─────────────────────────────────────────────────────────────────┐
  * │  WARNING: Decompression software can get you bent or killed.    │
- * │  This engine is experimental. For trained mixed-gas             │
- * │  decompression divers ONLY. Validate every schedule against     │
+ * │  This engine is experimental and for EDUCATIONAL purposes.      │
+ * │  For trained mixed-gas decompression divers ONLY.               │
+ * │  Validate every schedule against                                │
  * │  independent tables/software before diving it.                  │
  * └─────────────────────────────────────────────────────────────────┘
  */
@@ -25,6 +26,8 @@ data class DivePlan(
     val warnings: String,
     /** End-of-dive tissue state, `tissue.dat` format, for the next repetitive dive. */
     val tissueFileText: String,
+    /** True when the engine declined to compute a schedule; [warnings] says why. */
+    val refused: Boolean = false,
 )
 
 object ZPlan {
@@ -33,6 +36,12 @@ object ZPlan {
 
     private external fun nativePlan(profile: String, tissue: String?): Array<String?>
     private external fun nativeVersion(): String
+    private external fun nativeInterconnected(
+        profile: String, tissue: String?, previous: DoubleArray?, surfaceIntervalMinutes: Double,
+    ): DoubleArray?
+    private external fun nativeAltitude(
+        profile: String, tissue: String?, state: DoubleArray?, request: DoubleArray,
+    ): DoubleArray?
 
     /** Engine version, e.g. "1.7.0". */
     val version: String by lazy { nativeVersion() }
@@ -52,6 +61,17 @@ object ZPlan {
             reportText = r[1].orEmpty(),
             warnings = r[2].orEmpty(),
             tissueFileText = r[3].orEmpty(),
+            refused = r.getOrNull(4) == "1",
         )
     }
+
+    fun interconnectedState(
+        profile: String, tissueFile: String?, previous: DoubleArray?, surfaceIntervalMinutes: Double,
+    ): DoubleArray? = nativeInterconnected(profile, tissueFile, previous, surfaceIntervalMinutes)
+
+    fun altitude(
+        profile: String, tissueFile: String?, state: DoubleArray?,
+        trip: AltitudeTrip, settings: AltitudeSettings,
+    ): AltitudeAnswer? =
+        nativeAltitude(profile, tissueFile, state, trip.request(settings))?.let { AltitudeAnswer(it) }
 }

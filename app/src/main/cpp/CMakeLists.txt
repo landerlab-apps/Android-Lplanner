@@ -11,6 +11,7 @@ if(NOT DEFINED ZPLANKIT_DIR)
 endif()
 
 set(CZPLAN_SRC "${ZPLANKIT_DIR}/Sources/CZPlan/czplan.c")
+set(ZPALT_SRC "${ZPLANKIT_DIR}/Sources/CZPlan/zp_altitude.c")
 set(CZPLAN_INC "${ZPLANKIT_DIR}/Sources/CZPlan/include")
 
 if(NOT EXISTS "${CZPLAN_SRC}")
@@ -19,7 +20,7 @@ if(NOT EXISTS "${CZPLAN_SRC}")
         "Set zplankit.dir in gradle.properties to your ZPlanKit checkout.")
 endif()
 
-add_library(zplan SHARED "${CZPLAN_SRC}" zplan_jni.c)
+add_library(zplan SHARED "${CZPLAN_SRC}" "${ZPALT_SRC}" zplan_jni.c)
 target_include_directories(zplan PRIVATE "${CZPLAN_INC}")
 set_target_properties(zplan PROPERTIES C_STANDARD 99)
 target_link_libraries(zplan m log)

@@ -14,7 +14,7 @@ val zplanKitDir: String = (project.findProperty("zplankit.dir") as String? ?: ".
 
 // Optional release signing: create key.properties (git-ignored) with
 // storeFile / storePassword / keyAlias / keyPassword — same filename and keys as
-// the Stock Lite project, so both apps are configured identically. Reuse the
+// the Stock Lite project, so both apps are configured the same way. Reuse the
 // existing landerlab-keystore.jks: one keystore can sign many apps.
 val keystorePropsFile = rootProject.file("key.properties")
 val keystoreProps = Properties().apply {
@@ -28,13 +28,13 @@ android {
 
     defaultConfig {
         // Unique per-app ID. Google Play requires a distinct applicationId per app,
-        // so this cannot literally equal Stock Lite's — it shares the com.landerlab
-        // namespace and ships from the same Play developer account.
+        // so this cannot literally equal Stock Lite's — it shares the com. landerlab
+        // namespace and ships from the same Play developer account - verbose Carlos.
         applicationId = "com.landerlab.lplanner"
         minSdk = 26
         targetSdk = 36            // required for new Play submissions from 2026-08-31
-        versionCode = 11
-        versionName = "1.6.0"
+        versionCode = 16
+        versionName = "1.9.0"
 
         externalNativeBuild {
             cmake {

@@ -52,15 +52,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.landerlab.lplanner.BuildConfig
+import com.landerlab.lplanner.ConfigGuide
 import com.landerlab.lplanner.Disclaimer
 import com.landerlab.lplanner.DiveLevel
 import com.landerlab.lplanner.Manual
 import com.landerlab.lplanner.PlannerModel
 import com.landerlab.lplanner.Printing
+import com.landerlab.lplanner.Support
 import com.landerlab.lplanner.ZPlan
 
 /**
@@ -77,17 +81,6 @@ fun PlannerScreen(m: PlannerModel) {
     var showInfo by remember { mutableStateOf(false) }
 
     // The SwiftUI original switches on horizontalSizeClass == .compact.
-    //
-    // Height matters as much as width. A phone on its side reports ~870 x 390 dp
-    // and so passed a width-only test, landing on the tablet layout — three
-    // full-width setup rows plus the top bar left barely 100 dp for the plan,
-    // which is why landscape was unusable. A real tablet is wide AND tall.
-    // Measured from the WINDOW, not the screen. Configuration.screenWidthDp
-    // reports the display; on a foldable, in split screen, or in a freeform
-    // desktop window the app may own a fraction of it, and the layout would
-    // switch on the size of a rectangle the app does not have. Compose flags
-    // the old call for exactly this reason. containerSize is in pixels, so it
-    // goes through the density to reach dp.
     val container = LocalWindowInfo.current.containerSize
     val density = LocalDensity.current
     val wide = with(density) {
@@ -147,10 +140,8 @@ fun PlannerScreen(m: PlannerModel) {
                 HorizontalDivider()
             }
 
-            // Messages live above the tabs so they are visible whichever tab is
-            // showing. Previously they rendered inside the Plan pane, so a
-            // refusal like "no enabled dive levels" was invisible from the Dive
-            // tab and Calculate looked like it had done nothing at all.
+            // Refusal like "no enabled dive levels" was invisible from the Dive
+            // tab and Calculate
             if (m.notes.isNotEmpty()) {
                 Text(
                     m.notes,
@@ -196,6 +187,7 @@ fun PlannerScreen(m: PlannerModel) {
     if (showConfig) ConfigSheet(m) { showConfig = false }
     if (showLog) LogSheet(m) { showLog = false }
     if (showInfo) InfoDialog { showInfo = false }
+    if (m.showAltitude) AltitudeSheet(m) { m.showAltitude = false }
 }
 
 // ---- top bar: Config · Log · Calculate (left) · Share (right) ----
@@ -231,15 +223,6 @@ private fun TopBar(
                 .padding(horizontal = 18.dp, vertical = 7.dp),
         )
         Box(Modifier.weight(1f))
-        // Share, Print and Info are permanent and carry no caption. The three
-        // words cost more width than the icons they labelled, and on a 360 dp
-        // screen that was the difference between Print fitting and not. All
-        // three keep their contentDescription, so a screen reader still names
-        // them and nothing is lost to anyone who needs the word.
-        //
-        // Share and Print dim to 40% while there is nothing to send rather
-        // than disappearing: a bar that changes shape after the first
-        // Calculate makes the buttons hard to find twice.
         val noPlan = m.planText.isEmpty()
         BarButton("Share", Icons.Filled.Share, enabled = !noPlan, showLabel = false) {
             val send = Intent(Intent.ACTION_SEND).apply {
@@ -275,7 +258,44 @@ private fun InfoDialog(onDismiss: () -> Unit) {
                 Text(Manual.text, style = MaterialTheme.typography.bodySmall)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Text(
-                    ZPlan.version,
+                    "CONFIG SETTINGS",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(ConfigGuide.text, style = MaterialTheme.typography.bodySmall)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                // F-Droid build only; see the note on Support. The file is
+                // identical in both Android trees so drift-check stays clean.
+                if (Support.showInBuild(BuildConfig.APPLICATION_ID)) {
+                    Text(Support.heading, fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium)
+                    Text(Support.text, style = MaterialTheme.typography.bodySmall)
+                    // Hands off to the browser via ACTION_VIEW, so the app still
+                    // needs no INTERNET permission and makes no network access.
+                    val uriHandler = LocalUriHandler.current
+                    // Plain `if`, not `?.let {}`: the lambda `let` takes is not
+                    // @Composable, so Text() cannot be called inside it.
+                    val payUrl = Support.paypalUrl
+                    if (payUrl != null) {
+                        Text(
+                            Support.linkLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            textDecoration = TextDecoration.Underline,
+                            modifier = Modifier.clickable { uriHandler.openUri(payUrl) },
+                        )
+                    }
+                    SelectionContainer {
+                        Text(
+                            Support.fallback,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                Text(
+                    "Lplanner ${BuildConfig.VERSION_NAME} · engine ZPlanKit ${ZPlan.version} · AI-(Lalo)assisted",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
@@ -286,10 +306,8 @@ private fun InfoDialog(onDismiss: () -> Unit) {
 
 /**
  * Bar button. [showLabel] false leaves the icon alone in the box — used for
- * Share, Print and Info, where the picture is unambiguous and the caption was
- * only costing width. The vertical padding grows to compensate so an icon-only
- * button stays the same height as a captioned one and the bar keeps one
- * baseline; without it Config and Log stood a row taller than the rest.
+ * Share, Print and Info, where the picture is unambiguous, and the caption was
+ * only costing width.
  */
 @Composable
 private fun BarButton(
@@ -322,6 +340,16 @@ private fun SurfaceIntervalRow(m: PlannerModel) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (m.lastProfile != null) {
+                Text(
+                    "AAD Calc",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .border(1.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(4.dp))
+                        .clickable { m.showAltitude = true }
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+            }
             Text("Surface Interval", style = MaterialTheme.typography.bodyMedium)
             Check("48 hr", m.si48) { on -> m.si48 = on; if (on) m.si24 = false }
             Check("24 hr", m.si24) { on -> m.si24 = on; if (on) m.si48 = false }
@@ -412,6 +440,8 @@ private fun AutoRow(m: PlannerModel) {
     ) {
         Check(if (m.depthsMetric) "+3m" else "+10ft", m.plus3m) { m.plus3m = it }
         Check("+5min", m.plus5min) { m.plus5min = it }
+        Check("Travel Gas", m.travelGas) { m.travelGas = it }
+        Check("Air Breaks", m.airBreaksOn) { m.airBreaksOn = it }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -556,11 +586,6 @@ private fun PlanPane(m: PlannerModel, onFullScreen: () -> Unit) {
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Keeping a plan is deliberate. The log used to take every
-                // calculation, so it filled with the throwaway runs it takes to
-                // settle on a dive and the ones worth keeping were lost among
-                // them. Nothing to do with "Next dive", which loads your
-                // tissues — this only files a schedule for later.
                 if (m.canSaveLog) {
                     Row(
                         Modifier

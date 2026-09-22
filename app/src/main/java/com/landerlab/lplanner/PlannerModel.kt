@@ -63,13 +63,14 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
 
     private fun apply(s: PlannerState) {
         depthsMetric = s.depthsMetric; rmvMetric = s.rmvMetric
+        rmvMetricOverride = s.rmvMetricOverride
         saltWater = s.saltWater; o2Narcotic = s.o2Narcotic
         model = s.model
         vpmConservatism = s.vpmConservatism
         vpmRadiusN2 = s.vpmRadiusN2; vpmRadiusHe = s.vpmRadiusHe
         useGF = s.useGF; gfLow = s.gfLow; gfHigh = s.gfHigh
         altGfLow = s.altGfLow; altGfHigh = s.altGfHigh
-        extraSlow = s.extraSlow; ndlLow = s.ndlLow
+        ndlLow = s.ndlLow
         altitude = s.altitude; conservatism = s.conservatism
         altitudeEquilibrated = s.altitudeEquilibrated
         hoursAtAltitude = s.hoursAtAltitude
@@ -80,24 +81,30 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         maxPO2 = s.maxPO2; maxEND = s.maxEND
         bottomRMV = s.bottomRMV; decoRMV = s.decoRMV
         extStopShallow = s.extStopShallow; extStopDeep = s.extStopDeep
+        airBreaksOn = s.airBreaksOn; airBreakMode = s.airBreakMode
+        breakAfter = s.breakAfter; breakFor = s.breakFor; breakGas = s.breakGas
         si48 = s.si48; si24 = s.si24; siActual = s.siActual
         decoGasesOn = s.decoGasesOn; decoGases = s.decoGases
         circuitClosed = s.circuitClosed
         plus3m = s.plus3m; plus5min = s.plus5min; useAltGF = s.useAltGF
+        travelGas = s.travelGas
         levels.clear(); levels.addAll(s.levels)
         baselineTissue = s.baselineTissue; baselineDate = s.baselineDate
+        icmBaseline = s.icmBaseline
+        altitudeTrip = s.altitudeTrip; altitudeSettings = s.altitudeSettings
     }
 
     private fun snapshot(): PlannerState {
         val s = PlannerState()
         s.depthsMetric = depthsMetric; s.rmvMetric = rmvMetric
+        s.rmvMetricOverride = rmvMetricOverride
         s.saltWater = saltWater; s.o2Narcotic = o2Narcotic
         s.model = model
         s.vpmConservatism = vpmConservatism
         s.vpmRadiusN2 = vpmRadiusN2; s.vpmRadiusHe = vpmRadiusHe
         s.useGF = useGF; s.gfLow = gfLow; s.gfHigh = gfHigh
         s.altGfLow = altGfLow; s.altGfHigh = altGfHigh
-        s.extraSlow = extraSlow; s.ndlLow = ndlLow
+        s.ndlLow = ndlLow
         s.altitude = altitude; s.conservatism = conservatism
         s.altitudeEquilibrated = altitudeEquilibrated
         s.hoursAtAltitude = hoursAtAltitude
@@ -108,12 +115,17 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         s.maxPO2 = maxPO2; s.maxEND = maxEND
         s.bottomRMV = bottomRMV; s.decoRMV = decoRMV
         s.extStopShallow = extStopShallow; s.extStopDeep = extStopDeep
+        s.airBreaksOn = airBreaksOn; s.airBreakMode = airBreakMode
+        s.breakAfter = breakAfter; s.breakFor = breakFor; s.breakGas = breakGas
         s.si48 = si48; s.si24 = si24; s.siActual = siActual
         s.decoGasesOn = decoGasesOn; s.decoGases = decoGases
         s.circuitClosed = circuitClosed
         s.plus3m = plus3m; s.plus5min = plus5min; s.useAltGF = useAltGF
+        s.travelGas = travelGas
         s.levels = levels.toList()
         s.baselineTissue = baselineTissue; s.baselineDate = baselineDate
+        s.icmBaseline = icmBaseline
+        s.altitudeTrip = altitudeTrip; s.altitudeSettings = altitudeSettings
         return s
     }
 
@@ -127,9 +139,13 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     // ---- Config sheet ----
     var depthsMetric by mutableStateOf(true)        // Depths: Feet / Meters
     var rmvMetric by mutableStateOf(true)           // RMVs: Cu.ft / Liters
+    /** True once the diver has set the RMV units explicitly. Until then the RMV
+     *  units follow the depth units and no `RmvMetric:` line is written, which
+     *  lets the engine's own "follow UseMetric" default (rmv_metric = -1) apply. */
+    var rmvMetricOverride by mutableStateOf(false)
     var saltWater by mutableStateOf(true)           // Water: Fresh / Salt
     var o2Narcotic by mutableStateOf(false)         // O2 Narcotic: No / Yes
-    var model by mutableStateOf("c")                // "c" (ZHL16-C), "vval", or "vpm"
+    var model by mutableStateOf("c")                // "c" (ZHL16-C), "vval" (VVAL-79), or "vpm"
     var vpmConservatism by mutableStateOf(0)        // 0-4
     var vpmRadiusN2 by mutableStateOf("0.6")        // initial critical radius N2, microns
     var vpmRadiusHe by mutableStateOf("0.5")        // initial critical radius He, microns
@@ -138,7 +154,6 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     var gfHigh by mutableStateOf("85")
     var altGfLow by mutableStateOf("90")
     var altGfHigh by mutableStateOf("90")
-    var extraSlow by mutableStateOf(false)
     var ndlLow by mutableStateOf(false)
     var altitude by mutableStateOf("0")
     /** Above sea level only. Not equilibrated with 0 hours is the diver who
@@ -161,6 +176,14 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     /** Extra hold on a deco mix switch, per depth band, 0-10 min. */
     var extStopShallow by mutableStateOf(0)
     var extStopDeep by mutableStateOf(0)
+    /** Air breaks. Off, or the Navy dead-time rule / Subsurface modelled rule. */
+    var airBreaksOn by mutableStateOf(false)
+    var airBreakMode by mutableStateOf("navy")
+    /** Minutes on the rich mix, minutes on the break gas, and the chosen
+     *  break gas (blank = automatic). Both modes use these. */
+    var breakAfter by mutableStateOf("30")
+    var breakFor by mutableStateOf("5")
+    var breakGas by mutableStateOf("")
 
     // ---- Main window rows ----
     var si48 by mutableStateOf(false)
@@ -171,6 +194,9 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
     var circuitClosed by mutableStateOf(false)      // Open / Closed
     var plus3m by mutableStateOf(false)             // add 3 m / 10 ft to deepest level
     var plus5min by mutableStateOf(false)           // add 5 min to deepest level
+    /** Descend on the leanest carried mix breathable at the surface when the
+     *  back gas is hypoxic there, switching at the first safe stop increment. */
+    var travelGas by mutableStateOf(false)
     var useAltGF by mutableStateOf(false)           // use Alternative GF pair
 
     // ---- Levels ----
@@ -191,6 +217,13 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
      * a plain field would not recompose when Calculate or commitDive changed it.
      */
     private var resultTissue by mutableStateOf<String?>(null)
+    var icmBaseline by mutableStateOf<DoubleArray?>(null)
+    var lastProfile by mutableStateOf<String?>(null)
+    var lastTissue by mutableStateOf<String?>(null)
+    var lastIcm by mutableStateOf<DoubleArray?>(null)
+    var altitudeTrip by mutableStateOf(AltitudeTrip())
+    var altitudeSettings by mutableStateOf(AltitudeSettings())
+    var showAltitude by mutableStateOf(false)
 
     init {
         // Must run after every property above is initialised: Kotlin executes
@@ -243,17 +276,28 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             else -> "900:00"
         }
 
+    val surfaceIntervalMinutes: Double
+        get() {
+            val f = surfaceInterval.split(":").mapNotNull { it.trim().toDoubleOrNull() }
+            return if (f.size == 2) f[0] * 60 + f[1] else (f.firstOrNull() ?: 0.0) * 60
+        }
+
     val profileText: String
         get() {
             val p = StringBuilder()
             // Built line by line rather than with a trimIndent() raw string: trimIndent
             // measures indentation AFTER interpolation, so a newline pasted into any
             // config field would silently mangle every following key.
-            listOf(
+            // UseMetric first, and RmvMetric immediately after it when the diver
+            // has pinned the gas units: the engine applies its unit scaling as
+            // each key is read, so both flags have to precede any value they
+            // govern. Omitting RmvMetric is deliberate, not an oversight — it is
+            // what makes the engine's "gas units follow depth units" default apply.
+            listOfNotNull(
                 "UseMetric: ${yn(depthsMetric)}",
-                "RmvMetric: ${yn(rmvMetric)}",
+                if (rmvMetricOverride) "RmvMetric: ${yn(rmvMetric)}" else null,
                 "SaltWater: ${yn(saltWater)}",
-                "Model: ${when (model) { "vval" -> "vval18"; "vpm" -> "vpm"; else -> "zhl16c" }}",
+                "Model: ${when (model) { "vval" -> "vval79"; "vpm" -> "vpm"; else -> "zhl16c" }}",
                 "Altitude: ${one(altitude)}",
                 "AltitudeEquil: ${yn(altitudeEquilibrated)}",
                 "HoursAtAltitude: ${one(hoursAtAltitude)}",
@@ -275,6 +319,11 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
                 "MaxEND: ${one(maxEND)}",
                 "ExtStopShallow: $extStopShallow",
                 "ExtStopDeep: $extStopDeep",
+                "AirBreaks: ${if (airBreaksOn) airBreakMode else "n"}",
+                "O2Period: ${one(breakAfter)}",
+                "AirBreakTime: ${one(breakFor)}",
+                "BreakGas: ${one(breakGas)}",
+                "TravelGas: ${yn(travelGas)}",
             ).joinTo(p, "\n")
             if (model == "vpm") {
                 p.append("\nVpmConservatism: $vpmConservatism")
@@ -286,7 +335,6 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
                 val hi = if (useAltGF) altGfHigh else gfHigh
                 p.append("\nGradientFactors: $lo, $hi")
             }
-            p.append("\nExtraSlow: ${if (extraSlow) "y" else "n"}")
             p.append("\nNdlGF: ${if (ndlLow) "low" else "high"}")
             for (r in descentRates.lines().filter { it.isNotBlank() }) p.append("\nDescentRate: $r")
             for (r in ascentRates.lines().filter { it.isNotBlank() }) p.append("\nAscentRate: $r")
@@ -324,6 +372,113 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
 
     private fun fmt(v: Double): String =
         if (v == v.roundToInt().toDouble()) v.roundToInt().toString() else v.toString()
+
+    // ---- Units ----
+    //
+    // Settings are held in whatever units the diver is working in, and the
+    // engine is asked to compute in those same units — a 10 ft stop grid is a
+    // grid of whole feet, not of 3.048 m. Flipping a units control therefore
+    // has to rewrite every value that carries a dimension. Before v1.22 it
+    // rewrote none of them, so switching to Feet reinterpreted the metric
+    // defaults as feet: a 3 m last stop silently became 3 ft, and the ascent
+    // bands (70-30, 30-12, 12-0) left a 131 ft dive with no defined rate at
+    // all above 70 ft.
+
+    /** Depth unit in force, for labels. */
+    val depthUnit: String get() = if (depthsMetric) "m" else "ft"
+    /** RMV / gas-volume unit in force, for labels. */
+    val rmvUnit: String get() = if (rmvMetric) "L/min" else "cu.ft/min"
+
+    /**
+     * Switch the depth unit system, converting every depth-dimensioned value.
+     *
+     * Named `changeDepthUnits`, not `setDepthsMetric`: the `depthsMetric`
+     * property already generates a JVM setter with that exact signature, and
+     * the two collide at compile time ("platform declaration clash"). The Swift
+     * port carries the same name so the two do not drift.
+     *
+     * Rounding is to whole units, which is what makes the round trip stable:
+     * 3 m -> 10 ft -> 3 m, 40 m -> 131 ft -> 40 m. It also lands on the
+     * conventional imperial values divers expect (a 10 ft stop grid, not 9.8).
+     */
+    fun changeDepthUnits(metric: Boolean) {
+        if (metric == depthsMetric) return
+        val f = if (metric) 1.0 / FT_PER_M else FT_PER_M
+        altitude = scale(altitude, f)
+        stopDistance = scale(stopDistance, f)
+        lastStop = scale(lastStop, f)
+        maxEND = scale(maxEND, f)
+        descentRates = scaleLines(descentRates, f, emptySet())
+        ascentRates = scaleLines(ascentRates, f, emptySet())
+        // "80-30, 1.4": the depths convert, the setpoint must not.
+        decoSetpoints = scaleLines(decoSetpoints, f, setOf(2))
+        for (i in levels.indices) levels[i] = levels[i].copy(d = scale(levels[i].d, f))
+        entry = entry.copy(d = scale(entry.d, f))
+        depthsMetric = metric
+        // Gas units follow depth units unless the diver has said otherwise.
+        if (!rmvMetricOverride) applyRmvUnits(metric)
+        saveState()
+    }
+
+    /**
+     * Switch the RMV / gas-volume unit system. Marks the choice as explicit,
+     * which pins it against later depth-unit changes and makes the planner
+     * write an `RmvMetric:` line to say so.
+     */
+    fun changeRmvUnits(metric: Boolean) {
+        rmvMetricOverride = true
+        applyRmvUnits(metric)
+        saveState()
+    }
+
+    private fun applyRmvUnits(metric: Boolean) {
+        if (metric == rmvMetric) return
+        // 19 L/min <-> 0.67 cu.ft/min. Two decimals imperial, whole litres
+        // metric: a cubic foot is coarse enough that 0.1 would lose 3 L/min.
+        if (metric) {
+            bottomRMV = scale(bottomRMV, L_PER_CUFT, 0)
+            decoRMV = scale(decoRMV, L_PER_CUFT, 0)
+        } else {
+            bottomRMV = scale(bottomRMV, 1.0 / L_PER_CUFT, 2)
+            decoRMV = scale(decoRMV, 1.0 / L_PER_CUFT, 2)
+        }
+        rmvMetric = metric
+    }
+
+    /** Scale one numeric field. Anything unparseable is left exactly as typed —
+     *  a half-finished entry must never be silently rewritten to something else. */
+    private fun scale(s: String, f: Double, dp: Int = 0): String {
+        val v = s.trim().toDoubleOrNull() ?: return s
+        return round(v * f, dp)
+    }
+
+    private fun round(v: Double, dp: Int): String {
+        var p = 1.0
+        repeat(dp) { p *= 10.0 }
+        val r = (v * p).roundToInt() / p
+        return if (dp == 0) r.roundToInt().toString() else String.format("%.${dp}f", r)
+    }
+
+    /** Scale every number in a multi-line list, per line, skipping the
+     *  positions named in [skip] (0-based within the line). */
+    private fun scaleLines(s: String, f: Double, skip: Set<Int>): String =
+        s.split("\n").joinToString("\n") { line ->
+            val out = StringBuilder()
+            val num = StringBuilder()
+            var idx = 0
+            fun flush() {
+                if (num.isEmpty()) return
+                val v = num.toString().toDoubleOrNull()
+                if (idx !in skip && v != null) out.append(round(v * f, 0)) else out.append(num)
+                idx++
+                num.setLength(0)
+            }
+            for (ch in line) {
+                if (ch.isDigit() || ch == '.') num.append(ch) else { flush(); out.append(ch) }
+            }
+            flush()
+            out.toString()
+        }
 
     /** Add a new level, or commit changes to the one being edited. */
     fun addEntry() {
@@ -396,31 +551,28 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             // itself.
             val r = ZPlan.plan(profileText, baselineTissue)
             Log.i(TAG, "calculate: engine returned ${r.reportText.length} chars")
-            // Android only: the engine appends its warnings to the end of the
-            // report. On a phone that block can run to six or seven wrapped
-            // lines under a schedule that is already fighting for height, so it
-            // is stripped here and the standing warning lives in Info instead.
-            // zp_report() appends exactly "\n" + warnings, so removing that
-            // suffix is exact rather than a guess at where the table ends.
-            // iOS and macOS keep the warnings in the report.
-            planText = if (r.warnings.isNotEmpty())
+            // Android strips the engine's advisory warnings from under the
+            // schedule: on a phone that block runs to six or seven wrapped
+            // lines under a table already fighting for height, and the standing
+            // advice is in Info. zp_report() appends exactly "\n" + warnings,
+            // so removing that suffix is exact rather than a guess at where the
+            // table ends.
+            //
+            // A refusal is the opposite case. There is no schedule, and the
+            // warning is the only thing on screen that says why, so it stays.
+            planText = if (r.warnings.isNotEmpty() && !r.refused)
                 r.reportText.removeSuffix("\n" + r.warnings).trimEnd() + "\n"
             else r.reportText
             // NOT r.warnings. The notes line is for the reasons there is NO plan.
             notes = ""
             resultTissue = r.tissueFileText
-            // Log at the moment of calculation. Logging used to happen when the
-            // Log button was pressed, which saved whatever planText happened to
-            // hold — i.e. the previous calculation if any setting had changed
-            // since — and appended a duplicate every time the log was merely
-            // viewed. Recording it here means an entry always matches the
-            // settings that produced it.
-            // Prepared here, saved only if the diver asks for it. Building the
-            // entry at this moment is what keeps it honest: it captures the
-            // plan and the settings that produced it together. Logging on a
-            // later button press was the old bug — it saved whatever planText
-            // happened to hold by then, which was the PREVIOUS calculation if
-            // anything had been changed since.
+            lastProfile = profileText
+            lastTissue = baselineTissue
+            lastIcm = if (hasResidual && icmBaseline == null) null
+                else ZPlan.interconnectedState(
+                    profileText, baselineTissue,
+                    if (hasResidual) icmBaseline else null, surfaceIntervalMinutes,
+                )
             pendingLog = LogEntry(summary = diveSummary, text = planText)
             saveState()
         } catch (e: ZPlanException) {
@@ -436,7 +588,11 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private companion object { const val TAG = "Lplanner" }
+    private companion object {
+        const val TAG = "Lplanner"
+        const val FT_PER_M = 3.280839895013123
+        const val L_PER_CUFT = 28.316846592
+    }
 
     /** Short description of the dive and the settings behind a logged plan. */
     private val diveSummary: String
@@ -452,7 +608,7 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
             // Named modelText, not model: a local called `model` would shadow the
             // property of the same name and read very confusingly.
             val modelText = when (model) {
-                "vval" -> "VVAL-18"
+                "vval" -> "VVAL-79"
                 "vpm"  -> "VPM-B +$vpmConservatism"
                 else   -> buildString {
                     append("ZHL16-C")
@@ -468,11 +624,14 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
                 if (circuitClosed) add("CCR")
                 if (decoGasesOn && decoGases.isNotBlank()) add("deco $decoGases")
                 if (deepStops == "p" && !gfOn) add("Pyle $pyleTime min")
-                if (extraSlow) add("extra-slow")
                 if (extStopShallow > 0 || extStopDeep > 0)
                     add("ext stops $extStopDeep/$extStopShallow min")
+                if (airBreaksOn)
+                    add("air breaks " + (if (airBreakMode == "navy") "Navy" else "Subsurface") +
+                        " $breakAfter/$breakFor")
                 if (plus3m) add(if (depthsMetric) "+3m" else "+10ft")
                 if (plus5min) add("+5min")
+                if (travelGas) add("travel gas")
                 if (repetitive) add("SI $surfaceInterval")
             }
 
@@ -498,9 +657,6 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
      */
     fun saveToLog() {
         val entry = pendingLog ?: return
-        // Compare against the whole log, not just the newest entry. Checking
-        // only the first meant a plan you had deleted came straight back the
-        // next time you saved the same settings.
         if (log.none { it.text == entry.text }) {
             log.add(0, entry)
             store.save(log)
@@ -522,12 +678,8 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         val t = resultTissue ?: return
         baselineTissue = t
         baselineDate = System.currentTimeMillis()
+        icmBaseline = lastIcm
         siActual = ""; si24 = false; si48 = false
-        // Consume it. Without this the button stayed live after committing, so
-        // "Next dive" sat on screen next to "Residual gas is carried" as though
-        // nothing had happened — and pressing it again re-stamped the SAME
-        // dive with a fresh timestamp, silently resetting the surface interval
-        // to zero while the plan on screen was unchanged.
         resultTissue = null
         saveState()
     }
@@ -537,6 +689,10 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
         baselineTissue = null
         baselineDate = 0L
         resultTissue = null
+        icmBaseline = null
+        lastProfile = null
+        lastTissue = null
+        lastIcm = null
         saveState()
     }
 
