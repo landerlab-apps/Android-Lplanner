@@ -153,7 +153,7 @@ Altitude of the dive site, 0 for sea level.
 CONSERVATISM applies only to ZHL16-C with gradient factors off. It (0-50 %) preloads the compartments with extra inert gas, weighted from the fast compartments (none) to the slow ones (the full percentage), as if a previous dive had been made. Zero is the clean-diver profile.
 
 STOP DEPTHS
-Stop distance is the interval between decompression stops — 3 m is the convention; some rebreather divers prefer 6 m. Last stop is the depth of the final stop; some prefer pulling the 10 ft/3 m stop deeper. Both apply to every schedule, regardless of model, gradient factors, or deep stops.
+Stop distance is the interval between decompression stops — 3 m is the convention; some rebreather divers prefer 6 m. Last stop is the depth of the final stop, chosen from 3, 4.5, 5, 6 or 9 m (10, 15, 20 or 30 ft); some prefer pulling the 3 m stop deeper. The grid is built upward from the last stop, so 4.5 m with 3 m stops gives 4.5, 7.5, 10.5 m. Both apply to every schedule, regardless of model, gradient factors, or deep stops.
 
 DEEP STOPS
 Pyle deep stops insert short stops between the bottom and the first normal stop (mean-depth rule, re-run iteratively) to reduce microbubble formation and post-dive fatigue. Pyle stop time is the minutes spent at each generated stop (1–5). Not shown when gradient factors are enabled: GF Low takes over the deep-stop role.

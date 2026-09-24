@@ -173,8 +173,13 @@ fun ConfigSheet(m: PlannerModel, onDismiss: () -> Unit) {
             ConfigGroup("Stop depths") {
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(12.dp)) {
                     LabeledField("Stop distance (${m.depthUnit})", m.stopDistance, Modifier.weight(1f)) { m.stopDistance = it }
-                    LabeledField("Last stop (${m.depthUnit})", m.lastStop, Modifier.weight(1f)) { m.lastStop = it }
                 }
+                Text("Last stop (${m.depthUnit})", style = MaterialTheme.typography.bodyMedium)
+                val lastOpts = m.lastStopOptions
+                val lastSel = lastOpts.indexOf(
+                    if (lastOpts.contains(m.lastStop)) m.lastStop else m.snapLastStop(m.lastStop, m.depthsMetric),
+                )
+                Seg(lastOpts, lastSel, modifier = Modifier.fillMaxWidth()) { m.lastStop = lastOpts[it] }
             }
 
             if (!(m.useGF && m.model == "c")) {

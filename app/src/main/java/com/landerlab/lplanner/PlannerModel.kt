@@ -401,12 +401,21 @@ class PlannerModel(app: Application) : AndroidViewModel(app) {
      * 3 m -> 10 ft -> 3 m, 40 m -> 131 ft -> 40 m. It also lands on the
      * conventional imperial values divers expect (a 10 ft stop grid, not 9.8).
      */
+    val lastStopOptions: List<String>
+        get() = if (depthsMetric) listOf("3", "4.5", "5", "6", "9") else listOf("10", "15", "20", "30")
+
+    fun snapLastStop(v: String, metric: Boolean): String {
+        val opts = if (metric) listOf("3", "4.5", "5", "6", "9") else listOf("10", "15", "20", "30")
+        val x = v.replace(',', '.').toDoubleOrNull() ?: return opts[0]
+        return opts.minByOrNull { kotlin.math.abs((it.toDoubleOrNull() ?: 0.0) - x) } ?: opts[0]
+    }
+
     fun changeDepthUnits(metric: Boolean) {
         if (metric == depthsMetric) return
         val f = if (metric) 1.0 / FT_PER_M else FT_PER_M
         altitude = scale(altitude, f)
         stopDistance = scale(stopDistance, f)
-        lastStop = scale(lastStop, f)
+        lastStop = snapLastStop(scale(lastStop, f), metric)
         maxEND = scale(maxEND, f)
         descentRates = scaleLines(descentRates, f, emptySet())
         ascentRates = scaleLines(ascentRates, f, emptySet())
